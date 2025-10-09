@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+input::-ms-reveal,
+input::-webkit-credentials-auto-fill-button,
+input::-webkit-reveal-textfield-decoration,
+input::-webkit-reveal-button {
+  display: none;
+}
 
 
 /* :root { */
