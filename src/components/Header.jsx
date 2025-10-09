@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, ChevronDown, Menu, X } from 'lucide-react';
 import CategoryDropdown from './CategoriesDropdown';
 
-const Header = () => {
+const Header = ({onAuthClick}) => {
   // const [categoryOpen, setCategoryOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,10 +47,16 @@ const Header = () => {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <button className="px-4 py-2 rounded-full border border-gray-600 hover:bg-gray-800 transition-colors">
+            <button 
+              onClick={() => onAuthClick('register')} // Gọi hàm để mở modal Đăng ký
+              className="px-4 py-2 rounded-full border border-gray-600 hover:bg-gray-800 transition-colors"
+            >
               Đăng kí
             </button>
-            <button className="px-4 py-2 rounded-full bg-white text-gray-900 hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <button 
+              onClick={() => onAuthClick('login')} // Gọi hàm để mở modal Đăng nhập
+              className="px-4 py-2 rounded-full bg-white text-gray-900 hover:bg-gray-100 transition-colors flex items-center gap-2"
+            >
               Đăng nhập
             </button>
           </div>
@@ -78,10 +84,22 @@ const Header = () => {
               <button className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg">
                 Thể loại
               </button>
-              <button className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg">
+              <button 
+                onClick={() => {
+                  onAuthClick('register'); // Gọi hàm để mở modal Đăng ký
+                  setMobileMenuOpen(false); // Đóng menu mobile sau khi click
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg"
+              >
                 Đăng kí
               </button>
-              <button className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg">
+              <button 
+                onClick={() => {
+                  onAuthClick('login'); // Gọi hàm để mở modal Đăng nhập
+                  setMobileMenuOpen(false); // Đóng menu mobile sau khi click
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg"
+              >
                 Đăng nhập
               </button>
             </div>
