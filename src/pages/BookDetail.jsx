@@ -49,6 +49,8 @@ const BookDetail = () => {
     cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
     description: `Mưa Đỏ – một tác phẩm của nhà văn Chu Lai – dựa chứng tỏ vào cuộc hành trình nghiệt thở của một dị bộ đội đặc công dầy bản kích trong những năm đánh đập, dẫu trành quy sử chống Mỹ cứu nước. Tác phẩm sắc xanh này nhắc nhở lại những ngày xưa, những ngày mà lòng đứng cảm và tinh yêu quê hương nhiên nhóm trong mỗi nhịp tim.
 
+Những đông cháy của chiến trường trưa đổ giá đếm bờ sông Mê, một bản đồ dày những bi kịch và chiến tranh, nổi tiếng trong cuộc chiến Trị Thiên – Huế. Câu chuyện bát đầu bằng một trận chiến dữ dội, khi đơn vị đặc công đúng mệnh lại bát ngỏ kỷ kẽ để đánh phục kích. Cuộc chiến kết thúc với những trận rung sót khổng bảo giờ để bồ.
+Những đông cháy của chiến trường trưa đổ giá đếm bờ sông Mê, một bản đồ dày những bi kịch và chiến tranh, nổi tiếng trong cuộc chiến Trị Thiên – Huế. Câu chuyện bát đầu bằng một trận chiến dữ dội, khi đơn vị đặc công đúng mệnh lại bát ngỏ kỷ kẽ để đánh phục kích. Cuộc chiến kết thúc với những trận rung sót khổng bảo giờ để bồ.
 Những đông cháy của chiến trường trưa đổ giá đếm bờ sông Mê, một bản đồ dày những bi kịch và chiến tranh, nổi tiếng trong cuộc chiến Trị Thiên – Huế. Câu chuyện bát đầu bằng một trận chiến dữ dội, khi đơn vị đặc công đúng mệnh lại bát ngỏ kỷ kẽ để đánh phục kích. Cuộc chiến kết thúc với những trận rung sót khổng bảo giờ để bồ.`,
     reviewsList: [
       {
