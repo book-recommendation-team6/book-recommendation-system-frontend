@@ -23,3 +23,4 @@ const StarRating = React.memo(({ rating, maxStars = 5, size = 'w-5 h-5', showVal
 });
 
 StarRating.displayName = 'StarRating';
+export default StarRating;

@@ -28,3 +28,4 @@ const BookMetadata = React.memo(({ metadata }) => {
 });
 
 BookMetadata.displayName = 'BookMetadata';
+export default BookMetadata;

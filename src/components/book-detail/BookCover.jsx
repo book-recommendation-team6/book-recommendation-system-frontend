@@ -14,4 +14,8 @@ const BookCover = React.memo(({ src, alt, className = '' }) => {
   );
 });
 
+
+
 BookCover.displayName = 'BookCover';
+export default BookCover;
+
