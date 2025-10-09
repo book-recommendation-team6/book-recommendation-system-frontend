@@ -110,6 +110,41 @@ const books = [
     author: 'Thảo Trang',
     cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
     category: 'skills'
+  },
+  {
+    id: 17,
+    title: 'Tết ở Làng Địa Ngục',
+    author: 'Thảo Trang',
+    cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
+    category: 'skills'
+  },
+  {
+    id: 18,
+    title: 'Tết ở Làng Địa Ngục',
+    author: 'Thảo Trang',
+    cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
+    category: 'skills'
+  },
+  {
+    id: 19,
+    title: 'Tết ở Làng Địa Ngục',
+    author: 'Thảo Trang',
+    cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
+    category: 'skills'
+  },
+  {
+    id: 20,
+    title: 'Tết ở Làng Địa Ngục',
+    author: 'Thảo Trang',
+    cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
+    category: 'skills'
+  },
+  {
+    id: 16,
+    title: 'Tết ở Làng Địa Ngục',
+    author: 'Thảo Trang',
+    cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
+    category: 'skills'
   }
 ];
 
