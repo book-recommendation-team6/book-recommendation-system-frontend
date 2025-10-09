@@ -18,7 +18,7 @@ const BookCarousel = ({ books, title }) => {
 
   return (
     <div className="mb-12">
-        <SectionHeader title={title} />
+        <SectionHeader title={title} subtitle={true} />
       {/* <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
         <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
