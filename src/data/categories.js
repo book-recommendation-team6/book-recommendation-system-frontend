@@ -1,7 +1,7 @@
  const categories = {
   columns: [
     {
-      title: "Sách",
+      title: "",
       items: [
         { id: 1, name: 'Lãnh đạo' },
         { id: 2, name: 'Tâm lý' },

@@ -3,7 +3,7 @@ import { Search, ChevronDown, Menu, X } from 'lucide-react';
 import CategoryDropdown from './CategoriesDropdown';
 
 const Header = () => {
-  const [categoryOpen, setCategoryOpen] = useState(false);
+  // const [categoryOpen, setCategoryOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -24,15 +24,14 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6 flex-1 max-w-2xl mx-8">
-            <div className="relative">
+            <div className="relative group">
               <button
-                onClick={() => setCategoryOpen(!categoryOpen)}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
               >
                 Thể loại
                 <ChevronDown className="w-4 h-4" />
               </button>
-              <CategoryDropdown isOpen={categoryOpen} onClose={() => setCategoryOpen(false)} />
+              <CategoryDropdown   />
             </div>
 
             {/* Search Bar */}
