@@ -17,7 +17,7 @@ const MOCK_USERS = [
   }
 ];
 
-export const AuthProvider = ({ children }) => {
+function AuthProvider ({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -119,3 +119,5 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;

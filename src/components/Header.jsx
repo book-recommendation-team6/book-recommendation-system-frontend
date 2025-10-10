@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Search, ChevronDown, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CategoryDropdown from './CategoriesDropdown';
-import UserDropdown from './UserDropdown';
-import { useAuth } from '../hooks/useAuth';
+import ProfilePopover from './ProfilePopover';
+import { useAuth } from '../hook/useAuth';
 
 const Header = ({onAuthClick}) => {
   // const [categoryOpen, setCategoryOpen] = useState(false);
@@ -68,7 +68,7 @@ const Header = ({onAuthClick}) => {
                 </button>
               </>
             ) : (
-              <UserDropdown />
+              <ProfilePopover />
             )}
           </div>
 
