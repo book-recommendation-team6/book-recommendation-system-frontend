@@ -38,7 +38,7 @@ const AccountSidebar = React.memo(({ user, activeTab, onTabChange }) => {
                 }`}
               >
                 <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
+                <span className="font-semibold">{item.label}</span>
               </button>
             );
           })}
