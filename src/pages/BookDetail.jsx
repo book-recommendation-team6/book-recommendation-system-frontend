@@ -1,4 +1,5 @@
 import React, { useMemo, useCallback, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom'; // Thêm import này
 import MainLayout from '../layout/MainLayout';
 import { Breadcrumb } from 'antd';
 
@@ -37,8 +38,12 @@ class ErrorBoundary extends React.Component {
 }
 
 const BookDetail = () => {
+  // Thêm hook useNavigate
+  const navigate = useNavigate();
+  
   // Mock data - would come from API/props in real app
   const book = useMemo(() => ({
+    id: '1', // Thêm ID cho sách
     title: 'Mưa đỏ',
     rating: 4.5,
     reviews: '14 Đánh giá',
@@ -115,8 +120,9 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
   // Event handlers
   const handleRead = useCallback(() => {
     console.log('Start reading:', book.title);
-    // Navigate to reader page
-  }, [book.title]);
+    // Navigate to reader page with book ID
+    navigate(`/reader/${book.id}`);
+  }, [book.title, book.id, navigate]);
 
   const handleFavorite = useCallback(() => {
     console.log('Add to favorites:', book.title);
