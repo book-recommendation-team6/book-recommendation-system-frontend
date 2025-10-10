@@ -12,6 +12,7 @@ const Register = ({ onModeChange }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -20,7 +21,24 @@ const Register = ({ onModeChange }) => {
     });
   };
 
+  const handleConfirmPasswordChange = (e) => {
+    const { value } = e.target;
+    setFormData(prev => ({ ...prev, confirmPassword: value }));
+    
+    // Kiểm tra xem mật khẩu có khớp không
+    if (formData.password && value !== formData.password) {
+      setPasswordMismatch(true);
+    } else {
+      setPasswordMismatch(false);
+    }
+  };
+
   const handleSubmit = (e) => {
+    if (passswordMismatch){
+      e.preventDefault();
+      alert("Mật khẩu không khớp. Vui lòng kiểm tra lại.");
+      return;
+    }
     e.preventDefault();
     // Handle register logic here
     console.log('Register attempt:', formData);
@@ -92,8 +110,10 @@ const Register = ({ onModeChange }) => {
             type={showConfirmPassword ? 'text' : 'password'}
             name="confirmPassword"
             value={formData.confirmPassword}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 pr-12"
+            onChange={handleConfirmPasswordChange}
+            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 pr-12 ${
+              passwordMismatch ? 'border-red-500' : 'border-gray-300'
+            }`} // Thay đổi màu viền khi lỗi        
             placeholder="Xác nhận Mật khẩu"
             required
           />
@@ -105,6 +125,10 @@ const Register = ({ onModeChange }) => {
             {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />} {/* <-- SỬA Ở ĐÂY */}
           </button>
         </div>
+
+        {passwordMismatch && (
+          <p className="text-red-500 text-sm">Mật khẩu không khớp.</p>
+        )}
         
         <div className="flex items-center">
           <input
@@ -122,6 +146,7 @@ const Register = ({ onModeChange }) => {
         
         <button
           type="submit"
+          disabled={passwordMismatch || !formData.password || !formData.confirmPassword}
           className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition"
         >
           Đăng ký
