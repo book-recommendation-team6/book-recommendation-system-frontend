@@ -34,7 +34,7 @@ const Register = ({ onModeChange }) => {
   };
 
   const handleSubmit = (e) => {
-    if (passswordMismatch){
+    if (passwordMismatch){
       e.preventDefault();
       alert("Mật khẩu không khớp. Vui lòng kiểm tra lại.");
       return;
