@@ -3,6 +3,8 @@ import './App.css'
 import Home from './pages/Home'
 import {Routes, Route} from 'react-router-dom'
 import BookDetail from './pages/BookDetail'
+import ManageAccount from './pages/ManageAccount'
+
 function App() {
 
   return (
