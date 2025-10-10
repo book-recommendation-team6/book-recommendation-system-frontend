@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, ChevronDown, Menu, X } from 'lucide-react';
 import CategoryDropdown from './CategoriesDropdown';
-
+import { Link } from 'react-router-dom';
 const Header = ({onAuthClick}) => {
   // const [categoryOpen, setCategoryOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -12,13 +12,13 @@ const Header = ({onAuthClick}) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Logo" className="w-10 h-10"/>
-            <div>
-              <h1 className="text-xl font-bold">Tekbook</h1>
-              <p className="text-xs text-gray-400">Books here, stories there</p>
-            </div>
-          </div>
+          <Link to="/"className="flex items-center gap-3">
+              <img src="/logo.png" alt="Logo" className="w-10 h-10"/>
+              <div>
+                <h1 className="text-xl font-bold">Tekbook</h1>
+                <p className="text-xs text-gray-400">Books here, stories there</p>
+              </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6 flex-1 max-w-2xl mx-8">

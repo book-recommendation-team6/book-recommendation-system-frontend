@@ -1,8 +1,16 @@
 import React from 'react';
 import { Pen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
 const BookCard = ({ book }) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/books/${book.id}`);
+  };
+
   return (
-    <div className="flex-shrink-0 w-48 cursor-pointer ">
+    <div className="flex-shrink-0 w-48 cursor-pointer " onClick={handleClick}>
       <div className="relative overflow-hidden rounded-lg shadow-md transition-transform duration-300 hover:scale-105 group">
         <img
           src={book.cover}

@@ -1,0 +1,53 @@
+import React from 'react';
+import StarRating from './StarRating';
+import BookMetadata from './BookMetadata';
+import BookActions from './BookAction';
+import BookDescription from './BookDescription';
+import ReviewsSection from './ReviewsSection';
+
+
+const BookInfo = React.memo(({ book, onRead, onFavorite, onDownload }) => {
+  return (
+    <div className="lg:col-span-3">
+      <h1 className="text-4xl font-bold text-gray-900 mb-4">{book.title}</h1>
+
+      {/* Rating */}
+      <div className="flex items-center gap-3 mb-6">
+        <StarRating rating={book.rating} showValue={false} />
+        <span className="text-sm text-gray-600">{book.reviews}</span>
+      </div>
+
+      {/* Metadata */}
+      <BookMetadata
+        metadata={{
+          author: book.category,
+          genre: book.author,
+          publisher: book.publisher,
+          publishDate: book.publishDate,
+        }}
+      />
+
+      {/* Action Buttons */}
+      <BookActions
+        onRead={onRead}
+        onFavorite={onFavorite}
+        onDownload={onDownload}
+      />
+
+      {/* Description */}
+      <BookDescription description={book.description} />
+
+      {/* Reviews */}
+      <ReviewsSection
+        rating={book.rating}
+        totalReviews={book.reviews}
+        reviews={book.reviewsList || []}
+        bookTitle={book.title}
+        onLoadMore={() => console.log('Load more reviews')}
+      />
+    </div>
+  );
+});
+
+BookInfo.displayName = 'BookInfo';
+export default BookInfo;
