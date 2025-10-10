@@ -34,12 +34,13 @@ const Register = ({ onModeChange }) => {
   };
 
   const handleSubmit = (e) => {
-    if (passswordMismatch){
-      e.preventDefault();
-      alert("Mật khẩu không khớp. Vui lòng kiểm tra lại.");
+    e.preventDefault();
+    //Cái này hiện không cần do nút đăng kí đã disable khi không hợp lệ
+    if (passwordMismatch){
+      console.log("Mật khẩu không khớp. Vui lòng kiểm tra lại.");
+      window.alert("Mật khẩu không khớp. Vui lòng kiểm tra lại.");
       return;
     }
-    e.preventDefault();
     // Handle register logic here
     console.log('Register attempt:', formData);
   };
@@ -146,6 +147,7 @@ const Register = ({ onModeChange }) => {
         
         <button
           type="submit"
+          onClick={() => handleSubmit()}
           disabled={passwordMismatch || !formData.password || !formData.confirmPassword}
           className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition"
         >
