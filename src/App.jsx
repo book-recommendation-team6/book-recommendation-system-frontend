@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import React from 'react';
+import '@ant-design/v5-patch-for-react-19'; // Temporary patch for React 19 compatibility
 import './App.css'
 import Home from './pages/Home'
 import {Routes, Route} from 'react-router-dom'

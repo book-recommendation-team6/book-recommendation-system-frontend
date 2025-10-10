@@ -3,12 +3,20 @@ import { User, Book, History, Moon, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hook/useAuth';
 import { Switch } from "antd";
+import useTheme  from '../hook/useTheme';
 
 const ProfilePopover = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Theme management
+  const [theme, setTheme] = useTheme();
+
+  const handleThemeChange = (checked) => {
+    setTheme(checked ? 'dark' : 'light');
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -101,7 +109,7 @@ const ProfilePopover = () => {
                 <span className="text-sm">Dark Mode</span>
               </div>
               <div className="relative">
-                <Switch />
+                <Switch checked={theme === 'dark'} onChange={handleThemeChange} />
               </div>
             </div>
           </div>
