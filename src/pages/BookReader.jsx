@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom'; // Thêm import này
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom'; 
 import { FaBars, FaTimes } from 'react-icons/fa';
+import MainLayout from '../layout/MainLayout';
 import ReaderHeader from '../components/reader/ReaderHeader';
 import TableOfContents from '../components/reader/TableOfContents';
 import ReadingArea from '../components/reader/ReadingArea';
@@ -9,7 +10,7 @@ import PageNavigation from '../components/reader/PageNavigation';
 const BookReader = () => {
   // Lấy ID từ URL
   const { id } = useParams();
-  const navigate = useNavigate();      
+  const navigate = useNavigate(); 
   
   // State
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,51 +131,57 @@ const BookReader = () => {
     );
   }
 
+  const handleAuthClick = useCallback(() => {
+    navigate('/login');
+  }, [navigate]);
+
   return (
-    <div className={`min-h-screen ${theme === 'light' ? 'bg-gray-50 text-gray-900' : 'bg-gray-900 text-gray-100'} transition-colors duration-300`}>
-      {/* Truyền props xuống các component con */}
-      <ReaderHeader
-        bookTitle={book.title}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        onToggleTheme={toggleTheme}
-        theme={theme}
-        onIncreaseFontSize={increaseFontSize}
-        onDecreaseFontSize={decreaseFontSize}
-      />
-      
-      <div className="flex">
-        <TableOfContents
-          isOpen={sidebarOpen}
-          tableOfContents={tableOfContents}
-          currentPage={currentPage}
-          onChapterSelect={handleChapterSelect}
+    <MainLayout onAuthClick={handleAuthClick}>
+      <div className={`min-h-screen ${theme === 'light' ? 'bg-gray-50 text-gray-900' : 'bg-gray-900 text-gray-100'} transition-colors duration-300`}>
+        {/* Truyền props xuống các component con */}
+        <ReaderHeader
+          bookTitle={book.title}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onToggleTheme={toggleTheme}
           theme={theme}
+          onIncreaseFontSize={increaseFontSize}
+          onDecreaseFontSize={decreaseFontSize}
         />
         
-        <div className="flex-1 flex flex-col">
-          <ReadingArea
-            currentChapter={currentChapter}
+        <div className="flex">
+          <TableOfContents
+            isOpen={sidebarOpen}
+            tableOfContents={tableOfContents}
             currentPage={currentPage}
-            totalPages={totalPages}
-            pageContent={pageContent}
-            fontSize={fontSize}
+            onChapterSelect={handleChapterSelect}
             theme={theme}
           />
           
-          <div className="p-6 md:p-10 pt-0">
-            <div className="max-w-4xl mx-auto">
-              <PageNavigation
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPrevPage={handlePrevPage}
-                onNextPage={handleNextPage}
-                theme={theme}
-              />
+          <div className="flex-1 flex flex-col">
+            <ReadingArea
+              currentChapter={currentChapter}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageContent={pageContent}
+              fontSize={fontSize}
+              theme={theme}
+            />
+            
+            <div className="p-6 md:p-10 pt-0">
+              <div className="max-w-4xl mx-auto">
+                <PageNavigation
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPrevPage={handlePrevPage}
+                  onNextPage={handleNextPage}
+                  theme={theme}
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 

@@ -3,6 +3,7 @@ import './App.css'
 import Home from './pages/Home'
 import {Routes, Route} from 'react-router-dom'
 import BookDetail from './pages/BookDetail'
+import BookReader from './pages/BookReader';
 function App() {
 
   return (
