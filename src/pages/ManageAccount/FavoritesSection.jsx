@@ -1,8 +1,11 @@
 import React from 'react';
 import { Book } from 'lucide-react';
-import EmptyState from './EmptyState';
+import EmptyState from '../../components/account/EmptyState';
 
-const FavoritesSection = React.memo(({ favorites = [] }) => {
+const FavoritesSection = React.memo(() => {
+  // Update later to fetch real data
+  const favorites = useMemo(() => [], []);
+  
   if (favorites.length === 0) {
     return (
       <div>

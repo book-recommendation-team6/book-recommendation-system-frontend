@@ -47,9 +47,9 @@ const ProfilePopover = () => {
   };
 
   const menuItems = [
-    { icon: User, label: 'Quản lí tài khoản', path: '/account' },
-    { icon: Book, label: 'Sách yêu thích', path: '/account?tab=favorites' },
-    { icon: History, label: 'Lịch sử đọc sách', path: '/account?tab=history' },
+    { icon: User, label: 'Quản lí tài khoản', path: '/manage-account/profile' },
+    { icon: Book, label: 'Sách yêu thích', path: '/manage-account/favorite-books' },
+    { icon: History, label: 'Lịch sử đọc sách', path: '/manage-account/history-reading' },
   ];
 
   return (

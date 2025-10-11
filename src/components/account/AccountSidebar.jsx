@@ -4,9 +4,9 @@ import UserAvatar from './UserAvatar';
 
 const AccountSidebar = React.memo(({ user, activeTab, onTabChange }) => {
   const menuItems = [
-    { id: 'info', label: 'Quản lí tài khoản', icon: User },
-    { id: 'favorites', label: 'Sách yêu thích', icon: Book },
-    { id: 'history', label: 'Lịch sử đọc sách', icon: History }
+    { id: 'profile', label: 'Quản lí tài khoản', icon: User },
+    { id: 'favorite-books', label: 'Sách yêu thích', icon: Book },
+    { id: 'history-reading', label: 'Lịch sử đọc sách', icon: History }
   ];
 
   return (

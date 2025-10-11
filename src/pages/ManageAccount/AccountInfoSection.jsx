@@ -1,11 +1,12 @@
 // src/components/account/AccountInfoSection.jsx
 import React, { useState } from 'react';
-import AccountTabs from './AccountTab';
-import PersonalInfoForm from './PersonalInfoForm';
-
-const AccountInfoSection = React.memo(({ user, onUpdateUser }) => {
+import AccountTabs from '../../components/account/AccountTab';
+import PersonalInfoForm from '../../components/account/PersonalInfoForm';
+import { AuthContext } from '../../contexts/AuthContext';
+const AccountInfoSection = React.memo(() => {
   const [activeSubTab, setActiveSubTab] = useState('personal');
-
+  const { user } = React.useContext(AuthContext);
+  
   const subTabs = [
     { id: 'personal', label: 'Thông tin cá nhân' },
     { id: 'security', label: 'Tài khoản và bảo mật' }
@@ -13,7 +14,8 @@ const AccountInfoSection = React.memo(({ user, onUpdateUser }) => {
 
   const handleSubmit = (formData) => {
     console.log('Update user:', formData);
-    onUpdateUser(formData);
+    // Handle form submission logic here
+    //Update user data here
   };
 
   return (

@@ -1,21 +1,25 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 
 const useTheme = () => {
-    const [theme, setTheme] = useState(localStorage.getItem('theme') ? localStorage.getItem('theme') : 'system');
-    const element = document.documentElement;
-    const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    console.log(`Current theme: ${theme}`);
+    const [theme, setTheme] = useState(() => {
+        return localStorage.getItem('theme') || 'system';
+    });
 
-    const onWindowMatch = () => {
+    const onWindowMatch = useCallback(() => {
+        const element = document.documentElement;
+        const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        
         if( localStorage.theme === "dark" || (!("theme" in localStorage) && darkQuery.matches)) {
             element.classList.add('dark');
         } else {
             element.classList.remove('dark');
         }
-    }
+    }, []);
 
     useEffect(() => {
-       switch(theme) {
+        const element = document.documentElement;
+        
+        switch(theme) {
             case 'dark':
                 element.classList.add('dark');
                 localStorage.setItem('theme', 'dark');
@@ -26,13 +30,16 @@ const useTheme = () => {
                 break;
             default:
                 localStorage.removeItem('theme');
-                onWindowMatch(darkQuery);
+                onWindowMatch();
                 break;
         }
-    }, [theme]);
+    }, [theme, onWindowMatch]);
 
     useEffect(() =>{
-        const changeHandler = e => {
+        const element = document.documentElement;
+        const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        
+        const changeHandler = (e) => {
             if(!("theme" in localStorage)) {
                 if(e.matches) {
                     element.classList.add('dark');

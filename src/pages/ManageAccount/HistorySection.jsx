@@ -1,8 +1,11 @@
 import React from 'react';
 import { History } from 'lucide-react';
-import EmptyState from './EmptyState';
+import EmptyState from '../../components/account/EmptyState';
 
-const HistorySection = React.memo(({ history = [] }) => {
+const HistorySection = React.memo(() => {
+  // Update later to fetch real data
+  const history = useMemo(() => [], []);
+
   if (history.length === 0) {
     return (
       <div>
