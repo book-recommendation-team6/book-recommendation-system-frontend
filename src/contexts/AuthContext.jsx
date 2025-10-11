@@ -8,7 +8,7 @@ const STORAGE_KEY = 'tekbook_user';
 // Mock user database (in real app, this would be backend)
 const MOCK_USERS = [
   {
-    id: 1,
+    id: "1232133",
     email: 'user@example.com',
     password: 'password123',
     name: 'Sĩ Cường',
