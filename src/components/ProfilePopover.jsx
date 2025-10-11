@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hook/useAuth';
 import { Switch } from "antd";
 import useTheme  from '../hook/useTheme';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const ProfilePopover = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -50,7 +51,22 @@ const ProfilePopover = () => {
     { icon: User, label: 'Quản lí tài khoản', path: '/manage-account/profile' },
     { icon: Book, label: 'Sách yêu thích', path: '/manage-account/favorite-books' },
     { icon: History, label: 'Lịch sử đọc sách', path: '/manage-account/history-reading' },
-  ];
+  ];  
+
+  // Animation variants
+  const panelVariants = {
+    hidden: { opacity: 0, scale: 0.96, y: -6 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 420, damping: 28 } },
+    exit: { opacity: 0, scale: 0.98, y: -4, transition: { duration: 0.12 } }
+  };
+  const listVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.03, delayChildren: 0.03 } }
+  };
+  const itemVariants = {
+    hidden: { opacity: 0, y: -6 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.18 } }
+  };
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -69,8 +85,16 @@ const ProfilePopover = () => {
       </button>
 
       {/* Dropdown Menu */}
+      <AnimatePresence>
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-gray-800 text-white rounded-lg shadow-xl overflow-hidden z-50">
+         <motion.div
+            key="popover"
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={panelVariants}
+            className="absolute right-0 mt-2 w-80 bg-gray-800 text-white rounded-lg shadow-xl overflow-hidden z-50 origin-top-right"
+          >
           {/* User Info Header */}
           <div className="p-2 border-b border-gray-700">
             <div className="flex items-center bg-gray-900 gap-3 p-2 rounded-xl">
@@ -87,23 +111,27 @@ const ProfilePopover = () => {
           </div>
 
           {/* Menu Items */}
-          <div className="py-2">
+           <motion.div className="py-2" variants={listVariants} initial="hidden" animate="visible">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
-                <button
-                  key={item.path}
-                  onClick={() => handleMenuClick(item.path)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-700 transition-colors text-left"
-                >
+                <motion.button
+                    variants={itemVariants}
+                    key={item.path}
+                    onClick={() => handleMenuClick(item.path)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-700 transition-colors text-left"
+                  >
                   <Icon className="w-5 h-5" />
                   <span className="text-sm">{item.label}</span>
-                </button>
+                </motion.button>
               );
             })}
 
             {/* Dark Mode Toggle */}
-            <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-700 transition-colors">
+            <motion.div
+              variants={itemVariants}
+              className="flex items-center justify-between px-4 py-3 hover:bg-gray-700 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <Moon className="w-5 h-5" />
                 <span className="text-sm">Dark Mode</span>
@@ -111,11 +139,11 @@ const ProfilePopover = () => {
               <div className="relative">
                 <Switch checked={theme === 'dark'} onChange={handleThemeChange} />
               </div>
-            </div>
-          </div>
+            </motion.div>
+           </motion.div>
 
           {/* Logout Button */}
-          <div className="border-t border-gray-700 p-2">
+          <motion.div variants={itemVariants} className="border-t border-gray-700 p-2">
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-gray-700 rounded transition-colors"
@@ -123,9 +151,11 @@ const ProfilePopover = () => {
               <LogOut className="w-5 h-5" />
               <span className="text-sm font-medium">Đăng xuất</span>
             </button>
-          </div>
-        </div>
+          </motion.div>
+         
+         </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 };
