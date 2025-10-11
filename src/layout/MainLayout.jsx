@@ -16,10 +16,10 @@ const MainLayout = ({ children, showHero = false, heroContent = null }) => {
 
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background dark:bg-gray-900 flex flex-col">
       <Header onAuthClick={openAuthModal}/>
       {showHero && heroContent}
-      <main className="flex-1 max-w-7xl mx-auto mt-5">{children}</main>
+      <main className="flex-1 max-w-7xl mx-auto mt-5 w-full">{children}</main>
       <Footer />
       {/* Render AuthModal có điều kiện */}
       {/* Chỉ hiển thị khi showAuthModal là true */}

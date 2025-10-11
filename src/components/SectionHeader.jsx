@@ -6,11 +6,11 @@ function SectionHeader(props) {
          <div className="w-full mb-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-xl font-medium text-gray-800 mb-2">{title}</h1>
+                    <h1 className="text-xl font-medium text-gray-800 dark:text-white mb-2">{title}</h1>
                     <div className="w-32 h-1 bg-red-500 rounded-t-2xl"></div>
                 </div>
                 {subtitle && (
-                    <a href="#" className="text-gray-600 text-sm hover:underline">
+                    <a href="#" className="text-gray-600 dark:text-gray-400 text-sm hover:underline">
                         Xem tất cả
                     </a>
                 )}
