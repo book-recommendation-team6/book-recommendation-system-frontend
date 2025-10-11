@@ -9,22 +9,16 @@ const BookReader = () => {
     const navigate = useNavigate();
     
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1); // Sẽ được tính toán tự động
+    const [totalPages, setTotalPages] = useState(1); // Sẽ được cập nhật bởi ReadingArea
     const [book, setBook] = useState(null);
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [showSidebar, setShowSidebar] = useState(false);
     const [pageChangeTrigger, setPageChangeTrigger] = useState(false);
-    const [pages, setPages] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    
-    // Ref để truy cập DOM element
-    const contentRef = useRef(null);
-    const measureRef = useRef(null);
 
-    // Nội dung sách hoàn chỉnh
+    // Nội dung sách
     const fullContent = `
-        <h1 class="text-2xl font-bold mb-2 break-inside-avoid">The After House</h1>
-        <h2 class="text-xl font-semibold mb-6 break-inside-avoid">Chapter 1: PLAN A VOYAGE</h2>
+        <h1 class="text-2xl font-bold mb-2 break-inside-avoid-column">The After House</h1>
+        <h2 class="text-xl font-semibold mb-6 break-inside-avoid-column">Chapter 1: PLAN A VOYAGE</h2>
         <p class="mb-4 text-justify">Being a plain statement of the strange things that happened to me during the last ten weeks, I, Leslie MacQuarrie, M.D., write this narrative of my adventures on the yacht <em>Ella</em>, and of the curious events which followed my return from that ill-fated voyage.</p>
         <p class="mb-4 text-justify">I am not a writer. I am a medical man, thirty-six years old, and for ten years I have been engaged in practice in a small city in the Middle West. I am a bachelor, living in rooms over my office. My income is moderate, but I am free from debt, and I have always been able to put aside a small sum each year.</p>
         <p class="mb-4 text-justify">My brother, John MacQuarrie, is a mining engineer, and for some years has been interested in copper properties in the West. About a year ago he wrote to me that he had an opportunity to purchase a half-interest in a mine which he believed would prove very profitable, but that he lacked a few thousand dollars to secure the property.</p>
@@ -155,62 +149,10 @@ const BookReader = () => {
         setBook(mockBooks[id] || mockBooks['1']);
     }, [id]);
 
-    // Hàm để chia nội dung thành các trang
-    const paginateContent = useCallback(() => {
-        if (!measureRef.current) return;
-        
-        setIsLoading(true);
-        
-        // Tạo một div tạm thời để đo chiều cao của nội dung
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = fullContent;
-        tempDiv.style.width = `${measureRef.current.clientWidth}px`;
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.visibility = 'hidden';
-        tempDiv.style.height = 'auto';
-        tempDiv.style.top = '-9999px';
-        tempDiv.style.padding = '2rem';
-        tempDiv.style.columnCount = '2';
-        tempDiv.style.columnGap = '2rem';
-        document.body.appendChild(tempDiv);
-        
-        // Lấy chiều cao của nội dung
-        const contentHeight = tempDiv.scrollHeight;
-        document.body.removeChild(tempDiv);
-        
-        // Lấy chiều cao của một trang
-        const pageHeight = measureRef.current.clientHeight;
-        
-        // Tính số trang cần thiết
-        const calculatedTotalPages = Math.ceil(contentHeight / pageHeight);
-        setTotalPages(calculatedTotalPages);
-        
-        // Chia nội dung thành các trang
-        const newPages = [];
-        for (let i = 0; i < calculatedTotalPages; i++) {
-            newPages.push(fullContent);
-        }
-        setPages(newPages);
-        setIsLoading(false);
-    }, [fullContent]);
-
-    // Tính toán lại số trang khi component được mount hoặc khi kích thước cửa sổ thay đổi
-    useEffect(() => {
-        const handleResize = () => {
-            paginateContent();
-        };
-        
-        // Đợi một chút để DOM render xong rồi mới tính toán
-        setTimeout(() => {
-            paginateContent();
-        }, 100);
-        
-        window.addEventListener('resize', handleResize);
-        
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
-    }, [paginateContent]);
+    // Hàm để nhận tổng số trang từ ReadingArea
+    const handleTotalPagesChange = useCallback((newTotalPages) => {
+        setTotalPages(newTotalPages);
+    }, []);
 
     const handlePrevPage = () => {
         if (currentPage > 1) {
@@ -273,9 +215,7 @@ const BookReader = () => {
                         onNextPage={handleNextPage}
                         isDarkMode={isDarkMode}
                         pageChangeTrigger={pageChangeTrigger}
-                        contentRef={contentRef}
-                        measureRef={measureRef}
-                        isLoading={isLoading}
+                        onTotalPagesChange={handleTotalPagesChange} // Truyền callback xuống
                     />
                 </div>
                 {showSidebar && (

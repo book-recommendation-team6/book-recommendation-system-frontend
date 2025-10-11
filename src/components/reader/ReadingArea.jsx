@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ReadingArea = forwardRef(({ 
@@ -9,31 +9,109 @@ const ReadingArea = forwardRef(({
   onNextPage,
   isDarkMode,
   pageChangeTrigger,
-  contentRef,
-  measureRef,
-  isLoading
+  onTotalPagesChange
 }, ref) => {
   const [flashEffect, setFlashEffect] = useState(false);
+  const [pages, setPages] = useState([]); // State để lưu nội dung của từng trang
+  const [isLoading, setIsLoading] = useState(true); // State để hiển thị loading
+  const measureRef = useRef(null);
   
   useImperativeHandle(ref, () => ({
-    getContentNode: () => contentRef.current
+    getMeasureNode: () => measureRef.current
   }));
   
-  // Kích hoạt hiệu ứng nhấp nháy khi pageChangeTrigger thay đổi
   useEffect(() => {
     if (pageChangeTrigger) {
       setFlashEffect(true);
-      const timer = setTimeout(() => {
-        setFlashEffect(false);
-      }, 300); // Hiệu ứng kéo dài 300ms
-      
+      const timer = setTimeout(() => setFlashEffect(false), 300);
       return () => clearTimeout(timer);
     }
   }, [pageChangeTrigger]);
 
+  // HÀM ĐÃ ĐƯỢC SỬA LỖI: Chia nội dung thành các trang một cách chính xác
+  const paginateContent = useCallback(() => {
+    if (!measureRef.current || !pageContent) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const pageHeight = measureRef.current.clientHeight;
+    if (pageHeight === 0) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Tạo một container tạm để đo lường với đúng bố cục 2 cột
+    const tempContainer = document.createElement('div');
+    tempContainer.style.width = `${measureRef.current.clientWidth}px`;
+    tempContainer.style.padding = '2rem';
+    tempContainer.style.columnCount = '2';
+    tempContainer.style.columnGap = '2rem';
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.visibility = 'hidden';
+    tempContainer.style.top = '-9999px';
+    document.body.appendChild(tempContainer);
+
+    const newPages = [];
+    
+    // Tạo một div chứa các phần tử để dễ dàng thao tác
+    const contentHolder = document.createElement('div');
+    contentHolder.innerHTML = pageContent;
+    const elements = Array.from(contentHolder.children);
+
+    let currentPageElements = [];
+
+    for (const element of elements) {
+      // Thêm phần tử vào trang hiện tại trong container tạm
+      currentPageElements.push(element);
+      tempContainer.innerHTML = ''; // Xóa nội dung cũ
+      currentPageElements.forEach(el => tempContainer.appendChild(el.cloneNode(true)));
+
+      // Đo chiều cao của container sau khi thêm phần tử mới
+      const containerHeight = tempContainer.scrollHeight;
+
+      // Nếu chiều cao vượt quá trang và có ít nhất 1 phần tử
+      if (containerHeight > pageHeight && currentPageElements.length > 1) {
+        // Lấy phần tử vừa thêm ra khỏi trang hiện tại
+        const lastElement = currentPageElements.pop();
+        
+        // Lấy HTML của các phần tử vừa đủ cho trang này
+        const pageContentHTML = currentPageElements.map(el => el.outerHTML).join('');
+        newPages.push(pageContentHTML);
+
+        // Bắt đầu trang mới với phần tử vừa lấy ra
+        currentPageElements = [lastElement];
+      }
+    }
+
+    // Thêm các phần tử còn lại vào trang cuối cùng
+    if (currentPageElements.length > 0) {
+      const lastPageContentHTML = currentPageElements.map(el => el.outerHTML).join('');
+      newPages.push(lastPageContentHTML);
+    }
+
+    document.body.removeChild(tempContainer);
+
+    setPages(newPages);
+    onTotalPagesChange(newPages.length);
+    setIsLoading(false);
+  }, [pageContent, onTotalPagesChange]);
+
+  // Tính toán lại khi component mount hoặc khi nội dung/theme thay đổi
+  useEffect(() => {
+    const timer = setTimeout(paginateContent, 100); // Đợi DOM render
+    window.addEventListener('resize', paginateContent);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', paginateContent);
+    };
+  }, [paginateContent]);
+
   return (
     <div className={`relative flex-1 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'} ${flashEffect ? 'animate-pulse' : ''}`}>
-      {/* Previous Page Button - Fixed position */}
+      {/* Previous Page Button */}
       <button 
         onClick={onPrevPage}
         disabled={currentPage === 1}
@@ -44,45 +122,29 @@ const ReadingArea = forwardRef(({
         <ChevronLeft size={20} />
       </button>
 
-      {/* Book Page with 2 columns */}
+      {/* Container chính */}
       <div className="h-full w-full overflow-hidden pt-20 pb-20">
-        <div 
-          ref={contentRef}
-          className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} max-w-5xl mx-auto min-h-full py-12 px-8 transition-transform duration-300`}
-          style={{
-            columnCount: 2,
-            columnGap: '2rem',
-            transform: `translateX(-${(currentPage - 1) * 100}%)`,
-            width: `${totalPages * 100}%`
-          }}
-        >
-          {/* Chapter Header */}
-          <div className="text-center mb-12 break-inside-avoid">
-            <h1 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Chap 1</h1>
-            <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>PLAN A VOYAGE</h2>
-          </div>
-          
-          {/* Content */}
-          <div 
-            className="prose prose-lg max-w-none"
-            dangerouslySetInnerHTML={{ __html: pageContent }}
-          />
-        </div>
-        
-        {/* Element để đo kích thước */}
+        {/* Đây là "KHUNG SÁCH" - chỉ hiển thị nội dung của trang hiện tại */}
         <div 
           ref={measureRef}
-          className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} max-w-5xl w-full mx-auto min-h-full py-12 px-8`}
+          className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} max-w-5xl mx-auto relative shadow-xl`}
           style={{
-            position: 'absolute',
-            visibility: 'hidden',
-            height: 'calc(100vh - 10rem)',
-            top: '5rem'
+            height: 'calc(100vh - 12rem)',
           }}
-        />
+        >
+          {/* Nội dung của trang hiện tại */}
+          <div className="py-12 px-8" style={{ columnCount: 2, columnGap: '2rem' }}>
+            {/* Chỉnh cỡ chữ nhỏ hơn ở đây: prose-sm thay vì prose-lg */}
+            <div 
+              className="prose prose-sm max-w-full"
+              style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
+              dangerouslySetInnerHTML={{ __html: pages[currentPage - 1] || '' }}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Next Page Button - Fixed position */}
+      {/* Next Page Button */}
       <button 
         onClick={onNextPage}
         disabled={currentPage === totalPages}
@@ -93,17 +155,17 @@ const ReadingArea = forwardRef(({
         <ChevronRight size={20} />
       </button>
       
-      {/* Page Number - Bottom right corner */}
+      {/* Page Number */}
       <div className={`fixed bottom-4 right-4 px-3 py-1 rounded-lg bg-gray-700 text-white shadow-md z-20`}>
         <div className="text-sm font-medium">
           {currentPage}/{totalPages}
         </div>
       </div>
-      
-      {/* Loading indicator */}
+
+      {/* Loading Indicator */}
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="text-white text-lg">Đang tính toán số trang...</div>
+          <div className="text-white text-lg">Đang tải trang...</div>
         </div>
       )}
     </div>
