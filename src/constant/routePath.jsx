@@ -15,5 +15,6 @@ export const PATHS = {
     ROOT: "/admin",
     USERS: "/admin/users",
     BOOKS: "/admin/books",
+    ADD_BOOK: "/admin/books/add",
   },
 }

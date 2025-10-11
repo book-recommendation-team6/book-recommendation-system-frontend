@@ -16,6 +16,7 @@ import { PATHS } from "./constant/routePath"
 import AdminDashboard from "./pages/Admin/AdminDashboard"
 import AdminUsers from "./pages/Admin/AdminUsers"
 import AdminBooks from "./pages/Admin/AdminBooks"
+import AdminAddBook from "./pages/Admin/AdminAddbook"
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
               <AdminBooks />
           }
         />
+        <Route path={PATHS.ADMIN.ADD_BOOK} element={<AdminAddBook />} />
       </Routes>
     </AuthProvider>
   )
