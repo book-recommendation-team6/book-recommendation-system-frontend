@@ -12,7 +12,7 @@ const Home = () => {
 
   return (
     <MainLayout showHero={true} heroContent={<Hero />}>
-      <main className="mt-8">
+      <main className="mt-8 px-4 sm:px-6 lg:px-8 space-y-8">
         <BookCarousel books={recommendedBooks} title="SÁCH DÀNH CHO BẠN" />
         <BookCarousel books={newestBooks} title="SÁCH MỚI CẬP NHẬT" />
         <BookCarousel books={skillsBooks} title="KỸ NĂNG SỐNG" />

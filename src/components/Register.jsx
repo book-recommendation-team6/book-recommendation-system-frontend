@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react'; // <-- SỬA EYESLASH THÀNH EYEOFF
+import { useAuth } from '../hook/useAuth';
 
 const Register = ({ onModeChange }) => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ const Register = ({ onModeChange }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [passwordMismatch, setPasswordMismatch] = useState(false);
+  const { register } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -33,13 +35,14 @@ const Register = ({ onModeChange }) => {
     }
   };
 
-  const handleSubmit = (e) => {
-
+  const handleSubmit = async (e) => {
     e.preventDefault();
     //Cái này hiện không cần do nút đăng kí đã disable khi không hợp lệ
-    if (passwordMismatch){
-      console.log("Mật khẩu không khớp. Vui lòng kiểm tra lại.");
-      window.alert("Mật khẩu không khớp. Vui lòng kiểm tra lại.");
+    try {
+      await register(formData);
+      onModeChange('login'); // Switch to login after successful registration
+    } catch (err) {
+      window.alert(err.message);
       return;
     }
     // Handle register logic here

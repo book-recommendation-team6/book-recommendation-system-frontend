@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { Search, ChevronDown, Menu, X } from 'lucide-react';
-import CategoryDropdown from './CategoriesDropdown';
 import { Link } from 'react-router-dom';
+import CategoryDropdown from './CategoriesDropdown';
+import ProfilePopover from './ProfilePopover';
+import { useAuth } from '../hook/useAuth';
+
 const Header = ({onAuthClick}) => {
   // const [categoryOpen, setCategoryOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { isAuthenticated } = useAuth();
+
 
   return (
     <header className="bg-gray-900 text-white sticky top-0 z-50 shadow-lg">
@@ -46,22 +51,29 @@ const Header = ({onAuthClick}) => {
           </div>
 
           {/* Auth Buttons */}
+          {/* Auth Buttons / User Dropdown */}
           <div className="hidden md:flex items-center gap-3">
-            <button 
-              onClick={() => onAuthClick('register')} // Gọi hàm để mở modal Đăng ký
-              className="px-4 py-2 rounded-full border border-gray-600 hover:bg-gray-800 transition-colors"
-            >
-              Đăng kí
-            </button>
-            <button 
-              onClick={() => onAuthClick('login')} // Gọi hàm để mở modal Đăng nhập
-              className="px-4 py-2 rounded-full bg-white text-gray-900 hover:bg-gray-100 transition-colors flex items-center gap-2"
-            >
-              Đăng nhập
-            </button>
+            {!isAuthenticated ? (
+              <>
+                <button
+                  onClick={() => onAuthClick('register')}
+                  className="px-4 py-2 rounded-full border border-gray-600 hover:bg-gray-800 transition-colors"
+                >
+                  Đăng kí
+                </button>
+                <button
+                  onClick={() => onAuthClick('login')}
+                  className="px-4 py-2 rounded-full bg-white text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  Đăng nhập
+                </button>
+              </>
+            ) : (
+              <ProfilePopover />
+            )}
           </div>
 
-          {/* Mobile Menu Button */}
+           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2"
@@ -84,24 +96,32 @@ const Header = ({onAuthClick}) => {
               <button className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg">
                 Thể loại
               </button>
-              <button 
-                onClick={() => {
-                  onAuthClick('register'); // Gọi hàm để mở modal Đăng ký
-                  setMobileMenuOpen(false); // Đóng menu mobile sau khi click
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg"
-              >
-                Đăng kí
-              </button>
-              <button 
-                onClick={() => {
-                  onAuthClick('login'); // Gọi hàm để mở modal Đăng nhập
-                  setMobileMenuOpen(false); // Đóng menu mobile sau khi click
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg"
-              >
-                Đăng nhập
-              </button>
+              {!isAuthenticated ? (
+                <>
+                  <button
+                    onClick={() => {
+                      onAuthClick('register');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg"
+                  >
+                    Đăng kí
+                  </button>
+                  <button
+                    onClick={() => {
+                      onAuthClick('login');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-800 rounded-lg"
+                  >
+                    Đăng nhập
+                  </button>
+                </>
+              ) : (
+                <div className="px-4 py-2">
+                  <ProfilePopover />
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -1,15 +1,37 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../hook/useAuth';
 
 const Login = ({ onModeChange, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password });
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      onClose(); // Close modal on successful login
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+
+  // Demo credentials helper
+  const fillDemoCredentials = () => {
+    setEmail('user@example.com');
+    setPassword('password123');
+  };
+
 
   const handleGoogleLogin = () => {
     window.location.href = 'https://accounts.google.com';
@@ -22,7 +44,30 @@ const Login = ({ onModeChange, onClose }) => {
   return (
     <div className="w-full max-w-md">
       <h2 className="text-2xl font-bold text-center mb-6">Đăng nhập</h2>
-        
+      
+      {/* Demo Credentials Info */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-800 mb-2">
+          <strong>Demo Account:</strong>
+        </p>
+        <p className="text-xs text-blue-600 mb-1">Email: user@example.com</p>
+        <p className="text-xs text-blue-600 mb-2">Password: password123</p>
+        <button
+          type="button"
+          onClick={fillDemoCredentials}
+          className="text-xs text-blue-600 underline hover:text-blue-800"
+        >
+          Click để tự động điền
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <input
@@ -69,9 +114,10 @@ const Login = ({ onModeChange, onClose }) => {
         
         <button
           type="submit"
+          disabled={loading}
           className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition"
         >
-          Đăng nhập
+          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>
       </form>
       

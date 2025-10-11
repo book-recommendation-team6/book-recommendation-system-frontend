@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 input::-ms-reveal,
 input::-webkit-credentials-auto-fill-button,
@@ -18,5 +19,8 @@ input::-webkit-reveal-button {
   --color-background: #F4F2EF;
   --color-text: #111827;
 
+  --color-gray-sidebar: #0B0B0B;
 
+  --color-sidebar-admin-bg: #152259;
+  --color-sidebar-admin-items: #509CDB;
 }
