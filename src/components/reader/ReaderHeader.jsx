@@ -1,45 +1,73 @@
 import React from 'react';
-import { FaHome, FaBookmark, FaSun, FaMoon } from 'react-icons/fa';
+import { ChevronLeft, Bookmark, Menu, Moon } from 'lucide-react';
 
-const ReaderHeader = ({ bookTitle, onToggleSidebar, onToggleTheme, theme, onIncreaseFontSize, onDecreaseFontSize }) => {
+const ReaderHeader = ({ 
+  bookTitle, 
+  currentPage, 
+  totalPages, 
+  onGoBack, 
+  onToggleDarkMode, 
+  onToggleBookmark, 
+  onToggleMenu,
+  isDarkMode 
+}) => {
   return (
-    <header className={`${theme === 'light' ? 'bg-white shadow-md' : 'bg-gray-800 shadow-lg'} p-4 flex justify-between items-center`}>
-      <div className="flex items-center space-x-4">
+    <header className={`h-16 ${isDarkMode ? 'bg-gray-800' : 'bg-black'} text-white flex items-center justify-between px-6 shadow-lg`}>
+      {/* Left side */}
+      <div className="flex items-center space-x-3">
         <button 
-          onClick={onToggleSidebar}
-          className={`p-2 rounded ${theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}
+          onClick={onGoBack}
+          className="p-1 hover:bg-gray-700 rounded transition-colors"
         >
-          {/* Biểu tượng menu sẽ được quản lý ở component cha */}
+          <ChevronLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold">{bookTitle}</h1>
+        <span className="text-sm font-medium">Trang</span>
+        <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
+          <span className="text-sm font-medium text-black">{currentPage}</span>
+        </div>
+        <span className="text-sm font-medium">/{totalPages}</span>
       </div>
       
-      <div className="flex items-center space-x-4">
-        <button className={`p-2 rounded ${theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}>
-          <FaHome size={20} />
-        </button>
-        <button className={`p-2 rounded ${theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}>
-          <FaBookmark size={20} />
-        </button>
-        <div className="flex items-center space-x-2">
-          <button 
-            onClick={onDecreaseFontSize}
-            className={`px-2 py-1 rounded ${theme === 'light' ? 'bg-gray-200 hover:bg-gray-300' : 'bg-gray-700 hover:bg-gray-600'} transition-colors`}
-          >
-            A-
-          </button>
-          <button 
-            onClick={onIncreaseFontSize}
-            className={`px-2 py-1 rounded ${theme === 'light' ? 'bg-gray-200 hover:bg-gray-300' : 'bg-gray-700 hover:bg-gray-600'} transition-colors`}
-          >
-            A+
-          </button>
-        </div>
+      {/* Center - Book title */}
+      <h1 className="text-lg font-semibold truncate max-w-md">
+        {bookTitle}
+      </h1>
+      
+      {/* Right side */}
+      <div className="flex items-center space-x-3">
         <button 
-          onClick={onToggleTheme}
-          className={`p-2 rounded ${theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} transition-colors`}
+          onClick={onToggleDarkMode}
+          className="p-1 hover:bg-gray-700 rounded transition-colors"
         >
-          {theme === 'light' ? <FaMoon size={20} /> : <FaSun size={20} />}
+          <Moon size={20} />
+        </button>
+        
+        {/* Toggle switch */}
+        <button 
+          onClick={onToggleDarkMode}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            isDarkMode ? 'bg-blue-600' : 'bg-gray-300'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              isDarkMode ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+        
+        <button 
+          onClick={onToggleBookmark}
+          className="p-1 hover:bg-gray-700 rounded transition-colors"
+        >
+          <Bookmark size={20} />
+        </button>
+        
+        <button 
+          onClick={onToggleMenu}
+          className="p-1 hover:bg-gray-700 rounded transition-colors"
+        >
+          <Menu size={20} />
         </button>
       </div>
     </header>
