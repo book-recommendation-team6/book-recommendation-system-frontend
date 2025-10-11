@@ -1,9 +1,8 @@
-"use client"
-
 // src/components/account/AccountInfoSection.jsx
 import React, { useState } from "react"
 import AccountTabs from "../../components/account/AccountTab"
 import PersonalInfoForm from "../../components/account/PersonalInfoForm"
+import SecurityForm from "../../components/account/SecurityForm"
 import { AuthContext } from "../../contexts/AuthContext"
 const AccountInfoSection = React.memo(() => {
   const [activeSubTab, setActiveSubTab] = useState("personal")
@@ -30,11 +29,7 @@ const AccountInfoSection = React.memo(() => {
 
       {activeSubTab === "personal" && <PersonalInfoForm user={user} onSubmit={handleSubmit} />}
 
-      {activeSubTab === "security" && (
-        <div className="text-center py-12 text-gray-500">
-          <p>Tính năng đang được phát triển</p>
-        </div>
-      )}
+      {activeSubTab === "security" && <SecurityForm user={user} />}
     </div>
   )
 })
