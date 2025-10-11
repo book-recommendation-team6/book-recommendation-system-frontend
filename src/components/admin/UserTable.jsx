@@ -1,6 +1,6 @@
 "use client"
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
-import { Button } from "../ui/button"
+// import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+// import { Button } from "../ui/button"
 
 const UserTable = ({ users, onLockUser }) => {
   return (
@@ -24,10 +24,10 @@ const UserTable = ({ users, onLockUser }) => {
             >
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-8 h-8">
+                  {/* <Avatar className="w-8 h-8">
                     <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
                     <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  </Avatar> */}
                   <span className="text-sm text-gray-900 dark:text-gray-100">{user.name}</span>
                 </div>
               </td>
@@ -38,14 +38,14 @@ const UserTable = ({ users, onLockUser }) => {
                 <span className="text-sm text-cyan-500 dark:text-cyan-400">{user.status}</span>
               </td>
               <td className="px-6 py-4">
-                <Button
+                <button
                   variant="outline"
                   size="sm"
                   onClick={() => onLockUser(user.id)}
                   className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
                 >
                   Khóa tài khoản
-                </Button>
+                </button>
               </td>
             </tr>
           ))}

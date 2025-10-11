@@ -1,5 +1,5 @@
 import { Moon, Sun } from "lucide-react"
-import { Button } from "../ui/button"
+import { Button } from "antd"
 import useTheme from "../../hook/useTheme"
 
 const AdminHeader = ({ title = "ADMIN" }) => {
