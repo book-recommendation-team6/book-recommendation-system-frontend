@@ -5,7 +5,7 @@ import SearchBar from "../../components/admin/SearchBar"
 import BookTable from "../../components/admin/BookTable"
 import { Button } from "antd"
 import { Plus } from "lucide-react"
-const mockBooks = Array.from({ length: 10 }, (_, i) => ({
+const mockBooks = Array.from({ length: 20 }, (_, i) => ({
   id: i + 1,
   title: "We Are Voulhire",
   author: "Matthew Tysz",
@@ -40,9 +40,12 @@ const AdminBooks = () => {
   return (
     <AdminLayout title="ADMIN">
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-2">
-          <SearchBar onSearch={handleSearch} />
+        <div className="flex items-center gap-2 w-full">
+          <div className="flex-1">
+            <SearchBar onSearch={handleSearch} />
+          </div>
           <Button
+            className="flex items-center "
             onClick={handleAddBook}
             type="primary"
             size="large"

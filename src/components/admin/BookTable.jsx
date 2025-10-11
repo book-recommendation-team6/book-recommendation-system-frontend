@@ -104,10 +104,10 @@ const BookTable = ({ books, onEdit, onDelete }) => {
       >
         <Table
           rowSelection={rowSelection}
-          pagination={{ position: ["bottomCenter"], size: "middle" }}
+          pagination={{ position: ["bottomCenter"],  size: "large" }}
           columns={columns}
           dataSource={dataSource}
-          size="middle"
+          size="large"
         />
       </ConfigProvider>
     </Flex>
