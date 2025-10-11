@@ -10,5 +10,10 @@ export const PATHS = {
     PROFILE: "profile",
     FAVORITE_BOOKS: "favorite-books",
     HISTORY_READING: "history-reading",
-  }
+  },
+  ADMIN: {
+    ROOT: "/admin",
+    USERS: "/admin/users",
+    BOOKS: "/admin/books",
+  },
 }
