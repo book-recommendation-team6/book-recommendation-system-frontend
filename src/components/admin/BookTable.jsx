@@ -97,7 +97,7 @@ const BookTable = ({ books, onEdit, onDelete }) => {
         theme={{
           components: {
             Table: {
-              headerBg: "#D9D9D9",
+              headerBg: "#E7E7E7",
             },
           },
         }}

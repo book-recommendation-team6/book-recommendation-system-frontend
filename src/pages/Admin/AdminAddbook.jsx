@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Form, Input, Select, Button, Upload, message } from "antd";
+import { Form, Input, Select, Button, Upload, message, ConfigProvider } from "antd";
 import {
   ArrowLeftOutlined,
   DeleteOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
-import { Camera } from "lucide-react";
+import { Camera, File} from "lucide-react";
 import AdminLayout from "../../layout/AdminLayout";
 
 const { TextArea } = Input;
@@ -19,7 +19,7 @@ const AdminAddbook = () => {
   const [bookFile, setBookFile] = useState(null);
   const [selectedGenres, setSelectedGenres] = useState([]);
 
-  // Mock genres data
+  // Mock genres data - replace with actual API call if needed
   const genres = [
     "Công nghệ",
     "Văn học",
@@ -113,7 +113,7 @@ const AdminAddbook = () => {
             <ArrowLeftOutlined className="text-lg" />
           </button>
 
-          <h1 className="justify-self-center text-3xl font-bold text-indigo-600">
+          <h1 className="justify-self-center text-3xl font-bold text-[#4B69B1]">
             Thêm sách mới
           </h1>
 
@@ -268,13 +268,23 @@ const AdminAddbook = () => {
               {/* Book File Upload */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-gray-700 font-medium ">
+                  <label className="block text-gray-700 font-medium mb-2">
                     Tải sách lên
                   </label>
+                   <ConfigProvider
+                      theme={{
+                        components: {
+                          Upload: {
+                            // token cho Upload
+                            colorFillAlter: "#accee72b",    // nền nhẹ (drag area)
+                            controlOutline: "rgba(241, 163, 99, 0.25)", // focus ring
+                          },
+                        },
+                      }}
+                    >
                   <Upload.Dragger
                     beforeUpload={handleBookFileUpload}
                     showUploadList={false}
-                    className="rounded-lg"
                   >
                     <div className="py-8">
                       <p className="text-gray-600 mb-2">
@@ -285,6 +295,7 @@ const AdminAddbook = () => {
                       </p>
                     </div>
                   </Upload.Dragger>
+                  </ConfigProvider>
                 </div>
 
                 {/* Format */}
@@ -304,9 +315,9 @@ const AdminAddbook = () => {
                   </Select>
                 </Form.Item>
                 {bookFile && (
-                  <div className="mt-3 flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                  <div className="mt-6 flex items-center justify-between bg-blue-50 p-3 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <span className="text-blue-600 text-2xl">📄</span>
+                      <span className="text-blue-600 text-2xl"><File /></span>
                       <span className="text-gray-700">{bookFile.name}</span>
                     </div>
                     <Button
