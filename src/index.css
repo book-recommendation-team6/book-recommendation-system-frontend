@@ -8,7 +8,6 @@ input::-webkit-reveal-button {
   display: none;
 }
 
-
 @theme {
 
   --color-primary: #BF2C24;
@@ -18,5 +17,8 @@ input::-webkit-reveal-button {
   --color-background: #F4F2EF;
   --color-text: #111827;
 
-  --color-gray-slidebar: #0B0B0B;
+  --color-gray-sidebar: #0B0B0B;
+
+  --color-sidebar-admin-bg: #152259;
+  --color-sidebar-admin-items: #509CDB;
 }

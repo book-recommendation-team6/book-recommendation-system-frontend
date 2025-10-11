@@ -29,7 +29,7 @@ const AccountSidebar = React.memo(({ user, activeTab, onTabChange }) => {
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
                 className={`w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm sm:text-base ${
-                  isActive ? "bg-gray-slidebar opacity-56 text-white" : "text-gray-700 hover:bg-gray-100"
+                  isActive ? "bg-gray-sidebar opacity-56 text-white" : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />

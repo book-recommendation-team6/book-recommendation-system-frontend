@@ -4,9 +4,10 @@ import SearchBar from "../../components/admin/SearchBar"
 import UserTable from "../../components/admin/UserTable"
 
 // Sample data - replace with actual API call
-const sampleUsers = Array(10)
+const sampleUsers = Array(20)
   .fill(null)
   .map((_, index) => ({
+    key: index,
     id: index + 1,
     name: "Kristin Watson",
     userId: "#12345",

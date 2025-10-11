@@ -15,7 +15,7 @@ const AdminHeader = ({ title = "ADMIN" }) => {
   }
 
   return (
-    <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-8 py-4">
+    <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-8 py-4 sticky top-0 z-10">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
 
@@ -32,13 +32,13 @@ const AdminHeader = ({ title = "ADMIN" }) => {
             )}
           </button>
 
-          <Button
+          <button
             variant="outline"
             onClick={handleLogout}
-            className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950 bg-transparent"
+            className="border border-red-200 rounded-lg px-4 py-2 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950 bg-transparent"
           >
             Log out
-          </Button>
+          </button>
         </div>
       </div>
     </header>

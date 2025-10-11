@@ -1,13 +1,58 @@
+"use client"
+import { useState } from "react"
 import AdminLayout from "../../layout/AdminLayout"
+import SearchBar from "../../components/admin/SearchBar"
+import BookTable from "../../components/admin/BookTable"
+import { Button } from "antd"
+import { Plus } from "lucide-react"
+const mockBooks = Array.from({ length: 10 }, (_, i) => ({
+  id: i + 1,
+  title: "We Are Voulhire",
+  author: "Matthew Tysz",
+  genre: "Romance",
+  publisher: "ABCXYZ",
+  uploadDate: "29/10/2025",
+}))
 
 const AdminBooks = () => {
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const handleSearch = (query) => {
+    setSearchQuery(query)
+    console.log("[v0] Searching books:", query)
+  }
+
+  const handleAddBook = () => {
+    console.log("[v0] Add new book clicked")
+    // TODO: Implement add book modal/form
+  }
+
+  const handleEditBook = (bookId) => {
+    console.log("[v0] Edit book:", bookId)
+    // TODO: Implement edit book modal/form
+  }
+
+  const handleDeleteBook = (bookId) => {
+    console.log("[v0] Delete book:", bookId)
+    // TODO: Implement delete confirmation
+  }
+
   return (
     <AdminLayout title="ADMIN">
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Quản lí sách</h2>
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-lg border border-gray-200 dark:border-slate-800">
-          <p className="text-gray-600 dark:text-gray-400">Book management interface will be implemented here.</p>
+        <div className="flex items-center justify-between gap-2">
+          <SearchBar onSearch={handleSearch} />
+          <Button
+            onClick={handleAddBook}
+            type="primary"
+            size="large"
+          >
+            <Plus className="w-4 h-4" />
+            Thêm sách mới
+          </Button>
         </div>
+
+        <BookTable books={mockBooks} onEdit={handleEditBook} onDelete={handleDeleteBook} />
       </div>
     </AdminLayout>
   )

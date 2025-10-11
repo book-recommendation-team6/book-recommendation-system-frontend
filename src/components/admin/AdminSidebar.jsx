@@ -11,10 +11,10 @@ const AdminSidebar = () => {
   ]
 
   return (
-    <aside className="w-48 bg-[#1e293b] min-h-screen flex flex-col">
+    <aside className="w-64 bg-sidebar-admin-bg min-h-screen max-h-screen flex flex-col sticky top-0 z-20">
       {/* Logo */}
       <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg"></div>
+        <img src="/logo.png" alt="Logo" className="w-10 h-10"/>
         <span className="text-white font-semibold text-lg">Tekbook</span>
       </div>
 
@@ -29,7 +29,7 @@ const AdminSidebar = () => {
               key={item.path}
               to={item.path}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
-                isActive ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-slate-700"
+                isActive ? "bg-sidebar-admin-items text-white" : "text-gray-300 hover:bg-slate-700"
               }`}
             >
               <Icon className="w-5 h-5" />

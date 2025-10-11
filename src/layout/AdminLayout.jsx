@@ -7,7 +7,7 @@ const AdminLayout = ({ children, title }) => {
       <AdminSidebar />
       <div className="flex-1 flex flex-col">
         <AdminHeader title={title} />
-        <main className="flex-1 p-8">{children}</main>
+        <main className="flex-1 p-8 ">{children}</main>
       </div>
     </div>
   )
