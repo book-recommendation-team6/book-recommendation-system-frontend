@@ -21,7 +21,7 @@ function AuthProvider ({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize auth state from localStorage
+  // Initialize Auth state from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem(STORAGE_KEY);
     if (storedUser) {

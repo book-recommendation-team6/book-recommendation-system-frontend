@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react'; // <-- SỬA EYESLASH THÀNH EYEOFF
-import { useAuth } from '../hook/useAuth';
+import { useAuth } from '../../hook/useAuth.jsx';
 
 const Register = ({ onModeChange }) => {
   const [formData, setFormData] = useState({
@@ -151,7 +151,7 @@ const Register = ({ onModeChange }) => {
         
         <button
           type="submit"
-          onClick={() => handleSubmit()}
+
           disabled={passwordMismatch || !formData.password || !formData.confirmPassword}
           className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition"
         >

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../hook/useAuth';
+import { useAuth } from '../../hook/useAuth.jsx';
 
 const Login = ({ onModeChange, onClose }) => {
   const [email, setEmail] = useState('');

@@ -22,7 +22,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, bookTitle }) => {
       rating,
       comment: comment.trim(),
       date: new Date().toLocaleDateString('vi-VN'),
-      name: 'Người dùng' // In real app, this would come from user auth
+      name: 'Người dùng' // In real app, this would come from user Auth
     });
     
     // Reset form

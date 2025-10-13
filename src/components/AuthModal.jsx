@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import Login from './Login';
-import Register from './Register';
+import Login from '../pages/Auth/Login.jsx';
+import Register from '../pages/Auth/Register.jsx';
 import ForgotPassword from './ForgotPassword';
 import ConfirmPassword from './ConfirmPassword';
 
