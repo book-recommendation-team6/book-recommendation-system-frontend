@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../../hook/useAuth.jsx';
+import useAuth from '../../hook/useAuth.jsx';
 
 const Login = ({ onModeChange, onClose }) => {
   const [email, setEmail] = useState('');
@@ -16,9 +16,12 @@ const Login = ({ onModeChange, onClose }) => {
     setLoading(true);
 
     try {
+      console.log('Attempting login with:', { email, password });
       await login(email, password);
+      window.alert('Đăng nhập thành công!');
       onClose(); // Close modal on successful login
     } catch (err) {
+      window.alert('Đăng nhập thất bại!');
       setError(err.message);
     } finally {
       setLoading(false);

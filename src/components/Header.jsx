@@ -3,7 +3,7 @@ import { Search, ChevronDown, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CategoryDropdown from './CategoriesDropdown';
 import ProfilePopover from './ProfilePopover';
-import { useAuth } from '../hook/useAuth';
+import  useAuth  from '../hook/useAuth';
 
 const Header = ({onAuthClick}) => {
   // const [categoryOpen, setCategoryOpen] = useState(false);

@@ -4,7 +4,7 @@ import Home from "./pages/Home"
 import { Routes, Route } from "react-router-dom"
 import BookDetail from "./pages/BookDetail"
 
-import AuthProvider from "./contexts/AuthContext"
+import AuthProvider from "./contexts/AuthProvider"
 import ProtectedRoute from "./components/ProtectedRoute"
 
 import ManageAccount from "./pages/ManageAccount/ManageAccount"

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react'; // <-- SỬA EYESLASH THÀNH EYEOFF
-import { useAuth } from '../../hook/useAuth.jsx';
+import useAuth from '../../hook/useAuth.jsx';
 
 const Register = ({ onModeChange }) => {
   const [formData, setFormData] = useState({
     email: '',
     username: '',
-    phone: '',
+    phone_number: '',
     password: '',
     confirmPassword: ''
   });
@@ -40,6 +40,7 @@ const Register = ({ onModeChange }) => {
     //Cái này hiện không cần do nút đăng kí đã disable khi không hợp lệ
     try {
       await register(formData);
+      window.alert('Đăng ký thành công!');
       onModeChange('login'); // Switch to login after successful registration
     } catch (err) {
       window.alert(err.message);

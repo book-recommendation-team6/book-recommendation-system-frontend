@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Book, History, Moon, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hook/useAuth';
+import  useAuth from '../hook/useAuth';
 import { Switch } from "antd";
 import useTheme  from '../hook/useTheme';
 import { AnimatePresence, motion } from 'framer-motion';
