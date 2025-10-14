@@ -77,9 +77,13 @@ const Register = ({ onModeChange }) => {
     }
 
     try {
-      await register(formData);
-      window.alert('Đăng ký thành công!');
-      onModeChange('login');
+      const result = await register(formData);
+      if (result.success) {
+        window.alert('Đăng ký thành công!');
+        onModeChange('login');
+      } else {
+        window.alert(result.error);
+      }
     } catch (err) {
       window.alert(err.message);
     }

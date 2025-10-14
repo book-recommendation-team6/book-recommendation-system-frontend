@@ -36,8 +36,8 @@ api.interceptors.response.use(
       config.url !== "/Auth/register"
     ) {
       clearAuthData();
-      window.location.href =
-        "/login?message=Your+session+has+expired.+Please+log+in+again.";
+      // window.location.href =
+      //   "/login?message=Your+session+has+expired.+Please+log+in+again.";
       return new Promise(() => {});
     }
     return Promise.reject(error);

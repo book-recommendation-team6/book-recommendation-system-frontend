@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.jsx
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { setAuthData, getAuthData, getToken } from '../utils/storage';
+import { setAuthData, getAuthData, getToken, clearAuthData} from '../utils/storage';
 import { login as loginService, register as registerService } from '../services/authService';
 import {AuthContext} from "./AuthContext";
 
@@ -83,14 +83,15 @@ function AuthProvider ({ children }) {
   }, []);
 
   // Logout function
-//   const logout = useCallback(() => {
-//     try {
-//          clearAuthData();
-//          return { success: true, message: "Logout successful" };
-//     } catch (error) {
-//         console.error("Logout operation failed:", error);
-//     }
-//   }, []);
+  const logout = useCallback(() => {
+    try {
+         clearAuthData();
+         setUser(null);
+         return { success: true, message: "Logout successful" };
+    } catch (error) {
+        console.error("Logout operation failed:", error);
+    }
+  }, []);
 
   // Update user profile
   // const updateProfile = useCallback((updatedData) => {
@@ -105,6 +106,7 @@ function AuthProvider ({ children }) {
     isAuthenticated: !!user,
     login,
     register,
+    logout,
   };
 
   return (
