@@ -16,5 +16,6 @@ export const PATHS = {
     USERS: "/admin/users",
     BOOKS: "/admin/books",
     ADD_BOOK: "/admin/books/add",
+    EDIT_BOOK: "/admin/books/edit/:id",
   },
 }

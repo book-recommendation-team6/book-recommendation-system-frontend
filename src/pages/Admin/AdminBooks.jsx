@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import AdminLayout from "../../layout/AdminLayout"
 import SearchBar from "../../components/admin/SearchBar"
 import BookTable from "../../components/admin/BookTable"
-import { Button } from "antd"
+import { Button, Modal, message } from "antd"
 import { Plus } from "lucide-react"
 import { PATHS } from "../../constant/routePath"
 
@@ -20,6 +20,8 @@ const mockBooks = Array.from({ length: 10 }, (_, i) => ({
 const AdminBooks = () => {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [bookToDelete, setBookToDelete] = useState(null)
 
   const handleSearch = (query) => {
     setSearchQuery(query)
@@ -30,11 +32,31 @@ const AdminBooks = () => {
   }
 
   const handleEditBook = (bookId) => {
-    console.log("Edit book:", bookId)
+    navigate(`${PATHS.ADMIN.EDIT_BOOK.replace(':id', bookId)}`)
   }
 
   const handleDeleteBook = (bookId) => {
-    console.log("Delete book:", bookId)
+    setBookToDelete(bookId)
+    setIsDeleteModalOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    try {
+      // TODO: Add API call to delete book
+      // await deleteBookAPI(bookToDelete);
+      console.log("Delete book:", bookToDelete)
+      message.success("Xóa sách thành công!")
+      setIsDeleteModalOpen(false)
+      setBookToDelete(null)
+    } catch (error) {
+      message.error("Xóa sách thất bại!")
+      console.error("Error deleting book:", error)
+    }
+  }
+
+  const cancelDelete = () => {
+    setIsDeleteModalOpen(false)
+    setBookToDelete(null)
   }
 
   return (
@@ -56,6 +78,19 @@ const AdminBooks = () => {
 
         <BookTable books={mockBooks} onEdit={handleEditBook} onDelete={handleDeleteBook} />
       </div>
+
+      <Modal
+        title="Xóa sách"
+        open={isDeleteModalOpen}
+        onOk={confirmDelete}
+        onCancel={cancelDelete}
+        okText="Đồng ý"
+        cancelText="Từ chối"
+        okButtonProps={{ danger: true }}
+        centered
+      >
+        <p>Bạn muốn xóa sách này?</p>
+      </Modal>
     </AdminLayout>
   )
 }

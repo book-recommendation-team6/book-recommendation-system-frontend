@@ -18,6 +18,7 @@ import AdminDashboard from "./pages/Admin/AdminDashboard"
 import AdminUsers from "./pages/Admin/AdminUsers"
 import AdminBooks from "./pages/Admin/AdminBooks"
 import AdminAddBook from "./pages/Admin/AdminAddbook"
+import AdminEditBook from "./pages/Admin/AdminEditbook"
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
           }
         />
         <Route path={PATHS.ADMIN.ADD_BOOK} element={<AdminAddBook />} />
+        <Route path={PATHS.ADMIN.EDIT_BOOK} element={<AdminEditBook />} />
       </Routes>
     </AuthProvider>
   )

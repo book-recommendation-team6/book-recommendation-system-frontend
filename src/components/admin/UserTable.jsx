@@ -1,38 +1,44 @@
 import React, { useState } from 'react';
 import { ConfigProvider, Button, Flex, Table } from 'antd';
 
-const columns = [
-  { title: 'Họ và tên', dataIndex: 'name' },
-  { title: 'User id', dataIndex: 'userId' },
-  { title: 'Email', dataIndex: 'email' },
-  { title: 'Ngày tạo', dataIndex: 'createdDate' },
-  {
-    title: 'Trạng thái',
-    dataIndex: 'status',
-    render: (text) => (
-      <span
-        className={
-          text === 'Đang hoạt động'
-            ? 'text-teal-500 font-medium'
-            : text === 'Bị khóa'
-            ? 'text-red-500 font-medium'
-            : 'text-gray-500'
-        }
-      >
-        {text}
-      </span>
-    ),
-  },
-  {
-    title: 'Hành động',
-    dataIndex: '',
-    key: 'x',
-    render: () => <Button color="danger" variant="outlined">Ban</Button>,
-  },
-];
-
-
 const UserTable = ({ users, onLockUser }) => {
+  const columns = [
+    { title: 'Họ và tên', dataIndex: 'name' },
+    { title: 'User id', dataIndex: 'userId' },
+    { title: 'Email', dataIndex: 'email' },
+    { title: 'Ngày tạo', dataIndex: 'createdDate' },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      render: (text) => (
+        <span
+          className={
+            text === 'Đang hoạt động'
+              ? 'text-teal-500 font-medium'
+              : text === 'Bị khóa'
+              ? 'text-red-500 font-medium'
+              : 'text-gray-500'
+          }
+        >
+          {text}
+        </span>
+      ),
+    },
+    {
+      title: 'Hành động',
+      dataIndex: '',
+      key: 'x',
+      render: (_, record) => (
+        <Button 
+          color="danger" 
+          variant="outlined"
+          onClick={() => onLockUser(record.id)}
+        >
+          Ban
+        </Button>
+      ),
+    },
+  ];
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [loading, setLoading] = useState(false);
   const start = () => {

@@ -17,18 +17,18 @@ const Register = ({ onModeChange }) => {
   const { register } = useAuth();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+    const { name, value } = e.target;
+    const newFormData = { ...formData, [name]: value };
+    setFormData(newFormData);
 
-  const handleConfirmPasswordChange = (e) => {
-    const { value } = e.target;
-    setFormData(prev => ({ ...prev, confirmPassword: value }));
-    
-    // Kiểm tra xem mật khẩu có khớp không
-    if (formData.password && value !== formData.password) {
+    // Cập nhật kiểm tra mật khẩu không khớp ngay khi thay đổi
+    if (name === 'password' || name === 'confirmPassword') {
+      if (newFormData.password && newFormData.confirmPassword && newFormData.password !== newFormData.confirmPassword) {
+        setPasswordMismatch(true);
+      } else {
+        setPasswordMismatch(false);
+      }
+    } else if (name === 'password' && newFormData.confirmPassword && value !== newFormData.confirmPassword) {
       setPasswordMismatch(true);
     } else {
       setPasswordMismatch(false);
@@ -115,7 +115,7 @@ const Register = ({ onModeChange }) => {
             type={showConfirmPassword ? 'text' : 'password'}
             name="confirmPassword"
             value={formData.confirmPassword}
-            onChange={handleConfirmPasswordChange}
+            onChange={handleChange}
             className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 pr-12 ${
               passwordMismatch ? 'border-red-500' : 'border-gray-300'
             }`} // Thay đổi màu viền khi lỗi        
@@ -151,7 +151,6 @@ const Register = ({ onModeChange }) => {
         
         <button
           type="submit"
-          onClick={() => handleSubmit()}
           disabled={passwordMismatch || !formData.password || !formData.confirmPassword}
           className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition"
         >
