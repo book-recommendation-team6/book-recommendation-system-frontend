@@ -8,8 +8,8 @@ export const patterns = {
   // Mật khẩu mạnh: >=8, có thường, HOA, số, ký tự đặc biệt
   passwordStrong: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/,
 
-  // Display Name: 3-20 ký tự, chữ/số/_ , có thể có khoảng trắng
-  displayName: /^(?=.{3,20}$)[\p{L}\p{N}_\s]+$/u,
+  // Username: 3-20 ký tự, chữ/số/_ , có thể có khoảng trắng
+  username: /^(?=.{3,20}$)[\p{L}\p{N}_\s]+$/u,
 
   // Họ tên (có dấu, cho phép khoảng trắng, dấu . ' - ), độ dài 2-50
   fullName: /^[\p{L}][\p{L}\s'.-]{0,48}[\p{L}]$/u,
@@ -20,16 +20,17 @@ export const patterns = {
 
 // Hàm validate đăng ký
 export function validateSignup(form) {
-  // form: { email, password, confirmPassword, displayName }
+  // form: { email, password, confirmPassword, username }
   const errors = {};
-
+console.log('Validating form:', form);
   const email = (form.email || "").trim();
   const password = form.password || "";
   const confirmPassword = form.confirmPassword || "";
-  const displayName = (form.displayName || "").trim();
+  const username = (form.username || "").trim();
 
 
   if (!email || !patterns.email.test(email)) {
+    console.log("Invalid email:", email);
     errors.email = "Email không hợp lệ.";
   }
 
@@ -42,8 +43,8 @@ export function validateSignup(form) {
     errors.confirmPassword = "Xác nhận mật khẩu không khớp.";
   }
 
-  if (displayName && !patterns.displayName.test(displayName)) {
-    errors.displayName =
+  if (username && !patterns.username.test(username)) {
+    errors.username =
       "Tên 3-20 ký tự, chỉ gồm chữ/số/underscore, có thể có khoảng trắng.";
   }
 
