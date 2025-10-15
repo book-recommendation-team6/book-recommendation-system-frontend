@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, Suspense } from 'react';
 import MainLayout from '../layout/MainLayout';
 import { Breadcrumb } from 'antd';
+import scrollToTop from '../utils/scrollToTop';
 
 // // Import all the new components
 const BookCover = React.lazy(() => import('../components/book-detail/BookCover'));
@@ -37,6 +38,7 @@ class ErrorBoundary extends React.Component {
 }
 
 const BookDetail = () => {
+  scrollToTop();
   // Mock data - would come from API/props in real app
   const book = useMemo(() => ({
     title: 'Mưa đỏ',

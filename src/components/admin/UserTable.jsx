@@ -64,7 +64,7 @@ const UserTable = ({ users, onLockUser }) => {
         theme={{
           components: {
             Table: {
-             headerBg: '#D9D9D9',
+             headerBg: '#E7E7E7',
             },
           },
         }}

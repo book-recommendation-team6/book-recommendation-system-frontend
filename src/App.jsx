@@ -16,6 +16,8 @@ import { PATHS } from "./constant/routePath"
 import AdminDashboard from "./pages/Admin/AdminDashboard"
 import AdminUsers from "./pages/Admin/AdminUsers"
 import AdminBooks from "./pages/Admin/AdminBooks"
+import AdminAddBook from "./pages/Admin/AdminAddbook"
+import PdfToEpub from "./pages/PdfToEpub";
 
 function App() {
   return (
@@ -56,6 +58,8 @@ function App() {
               <AdminBooks />
           }
         />
+        <Route path={PATHS.ADMIN.ADD_BOOK} element={<AdminAddBook />} />
+        <Route path="/reader" element={<PdfToEpub />} />
       </Routes>
     </AuthProvider>
   )
