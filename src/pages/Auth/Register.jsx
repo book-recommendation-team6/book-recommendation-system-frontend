@@ -64,6 +64,7 @@ const Register = ({ onModeChange }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorInputs({});
