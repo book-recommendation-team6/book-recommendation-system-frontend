@@ -3,13 +3,13 @@ import { Search, ChevronDown, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CategoryDropdown from './CategoriesDropdown';
 import ProfilePopover from './ProfilePopover';
-import { useAuth } from '../hook/useAuth';
+import  useAuth  from '../hook/useAuth';
 
-const Header = ({onAuthClick}) => {
+const Header = ({onAuthClick, user}) => {
   // const [categoryOpen, setCategoryOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
 
 
   return (
@@ -69,7 +69,7 @@ const Header = ({onAuthClick}) => {
                 </button>
               </>
             ) : (
-              <ProfilePopover />
+              <ProfilePopover user={user} logout={logout}/>
             )}
           </div>
 

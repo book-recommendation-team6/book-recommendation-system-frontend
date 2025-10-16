@@ -1,15 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Book, History, Moon, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hook/useAuth';
 import { Switch } from "antd";
 import useTheme  from '../hook/useTheme';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const ProfilePopover = () => {
+const ProfilePopover = ({ user, logout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   // Theme management
@@ -75,7 +73,7 @@ const ProfilePopover = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-800 rounded-full transition-colors"
       >
-        <span className="text-sm font-medium hidden md:block">{user?.name || 'Sĩ Cường'}</span>
+        <span className="text-sm font-medium hidden md:block">{user?.username || 'No Name'}</span>
         <img
           src={user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop'}
           alt={user?.name}
@@ -100,11 +98,11 @@ const ProfilePopover = () => {
             <div className="flex items-center bg-gray-900 gap-3 p-2 rounded-xl">
               <img
                 src={user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop'}
-                alt={user?.name}
+                alt={user?.name }
                 className="w-16 h-16 rounded-full object-cover"
               />
               <div>
-                <p className="font-semibold text-white">{user?.name || 'Sĩ Cường'}</p>
+                <p className="font-semibold text-white">{user?.name || user?.username || 'Sĩ Cường'}</p>
                 <p className="text-sm text-gray-400">{user?.email || 'sicuong@gmail.com'}</p>
               </div>
             </div>

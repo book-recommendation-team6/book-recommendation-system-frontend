@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../hook/useAuth';
-
+import useAuth from '../../hook/useAuth.jsx';
+import { useMessage } from '../../contexts/MessageProvider.jsx';
 const Login = ({ onModeChange, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -10,28 +10,31 @@ const Login = ({ onModeChange, onClose }) => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
+  const message = useMessage(); // Sử dụng global message
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
+    if (!email || !password) {
+      console.log('Email or password is empty');
+      message.warning('Vui lòng nhập đủ Email và Mật khẩu');
+      return;
+    }
+    
     try {
+      console.log('Attempting login with:', { email, password });
       await login(email, password);
+      message.success('Đăng nhập thành công!');
       onClose(); // Close modal on successful login
     } catch (err) {
+      message.error('Đăng nhập thất bại!');
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-
-
-  // Demo credentials helper
-  const fillDemoCredentials = () => {
-    setEmail('user@example.com');
-    setPassword('password123');
-  };
-
 
   const handleGoogleLogin = () => {
     window.location.href = 'https://accounts.google.com';
@@ -44,23 +47,6 @@ const Login = ({ onModeChange, onClose }) => {
   return (
     <div className="w-full max-w-md">
       <h2 className="text-2xl font-bold text-center mb-6">Đăng nhập</h2>
-      
-      {/* Demo Credentials Info */}
-      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800 mb-2">
-          <strong>Demo Account:</strong>
-        </p>
-        <p className="text-xs text-blue-600 mb-1">Email: user@example.com</p>
-        <p className="text-xs text-blue-600 mb-2">Password: password123</p>
-        <button
-          type="button"
-          onClick={fillDemoCredentials}
-          className="text-xs text-blue-600 underline hover:text-blue-800"
-        >
-          Click để tự động điền
-        </button>
-      </div>
-
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-600">{error}</p>
@@ -73,10 +59,12 @@ const Login = ({ onModeChange, onClose }) => {
           <input
             type="email"
             value={email}
+            name="email"
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             placeholder="Email"
-            required
+            autoComplete="email"
+            // required
           />
         </div>
         
@@ -84,10 +72,12 @@ const Login = ({ onModeChange, onClose }) => {
           <input
             type={showPassword ? 'text' : 'password'}
             value={password}
+            name="password"
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 pr-12"
             placeholder="Mật khẩu"
-            required
+            autoComplete="password"
+            // required
           />
           <button
             type="button"

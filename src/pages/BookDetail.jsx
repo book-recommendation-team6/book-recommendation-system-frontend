@@ -2,7 +2,8 @@ import React, { useMemo, useCallback, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom'; // Thêm import này
 import MainLayout from '../layout/MainLayout';
 import { Breadcrumb } from 'antd';
-
+import scrollToTop from '../utils/scrollToTop';
+import {Link} from "react-router-dom";
 // // Import all the new components
 const BookCover = React.lazy(() => import('../components/book-detail/BookCover'));
 const BookInfo = React.lazy(() => import('../components/book-detail/BookInfo'));
@@ -41,6 +42,7 @@ const BookDetail = () => {
   // Thêm hook useNavigate
   const navigate = useNavigate();
   
+  scrollToTop();
   // Mock data - would come from API/props in real app
   const book = useMemo(() => ({
     id: '1', // Thêm ID cho sách
@@ -135,8 +137,8 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
   }, [book.title]);
 
   const breadcrumbItems = useMemo(() => [
-    { title: 'Home' },
-    { title: <a href="">Book Detail</a> },
+    { title: <Link to="/">Trang chủ</Link> },
+    { title: <p href="">Chi tiết sách</p> },
   ], []);
 
   return (

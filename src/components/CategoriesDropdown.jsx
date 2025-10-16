@@ -1,9 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import categories from '../data/categories';
 
 
 const CategoryDropdown = () => {
-  // if (!isOpen) return null;
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (category) => {
+    // Navigate to category page with category ID and name
+    navigate(`/category/${category.id}?name=${encodeURIComponent(category.name)}`);
+  };
 
   return (
     <div className="absolute pointer-events-none group-hover:pointer-events-auto top-full left-0 mt-0 pt-2 bg-transparent z-50 min-w-96">
@@ -24,6 +30,7 @@ const CategoryDropdown = () => {
                 {column.items.map((item) => (
                   <button
                     key={item.id}
+                    onClick={() => handleCategoryClick(item)}
                     className="w-full text-left py-1 transition-colors text-sm text-gray-300 hover:text-blue-300"
                   >
                     {item.name}
@@ -35,7 +42,10 @@ const CategoryDropdown = () => {
         </div>
         
         <div className="px-4 pt-2 border-t border-gray-700">
-          <button className="text-sm text-blue-400 hover:text-blue-300 font-medium py-2">
+          <button 
+            onClick={() => navigate('/categories')}
+            className="text-sm text-blue-400 hover:text-blue-300 font-medium py-2"
+          >
             Xem thêm →
           </button>
         </div>

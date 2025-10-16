@@ -1,12 +1,11 @@
-import '@ant-design/v5-patch-for-react-19';
-import { useState } from 'react'
-import './App.css'
-import Home from './pages/Home'
-import {Routes, Route} from 'react-router-dom'
-import BookDetail from './pages/BookDetail'
-import BookReader from './pages/BookReader';
+import "@ant-design/v5-patch-for-react-19" // Temporary patch for React 19 compatibility
+import "./App.css"
+import Home from "./pages/Home"
+import { Routes, Route } from "react-router-dom"
+import BookDetail from "./pages/BookDetail"
+import CategoryBooks from "./pages/CategoryBooks"
 
-import AuthProvider from "./contexts/AuthContext"
+import AuthProvider from "./contexts/AuthProvider"
 import ProtectedRoute from "./components/ProtectedRoute"
 
 import ManageAccount from "./pages/ManageAccount/ManageAccount"
@@ -27,7 +26,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/books/:id" element={<BookDetail />} />
-        <Route path="/reader/:id" element={<BookReader />} />
+        <Route path={PATHS.CATEGORY} element={<CategoryBooks />} />
         <Route
           path={PATHS.MANAGE_ACCOUNT_REDIRECT.ROOT}
           element={
@@ -63,6 +62,7 @@ function App() {
         />
         <Route path={PATHS.ADMIN.ADD_BOOK} element={<AdminAddBook />} />
         <Route path={PATHS.ADMIN.EDIT_BOOK} element={<AdminEditBook />} />
+        {/* <Route path="/reader" element={<PdfToEpub />} /> */}
       </Routes>
     </AuthProvider>
   )

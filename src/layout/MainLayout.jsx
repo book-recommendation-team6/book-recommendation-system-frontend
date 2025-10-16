@@ -2,11 +2,12 @@ import React, {useState} from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import AuthModal from '../components/AuthModal';
+import useAuth from '../hook/useAuth';
 
 const MainLayout = ({ children, showHero = false, heroContent = null }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register' or 'forgot' or 'confirm'
-
+  const { user } = useAuth();
 
   // Hàm này sẽ được truyền xuống cho Header để mở modal
   const openAuthModal = (mode) => {
@@ -17,7 +18,7 @@ const MainLayout = ({ children, showHero = false, heroContent = null }) => {
 
   return (
     <div className="min-h-screen bg-background dark:bg-gray-900 flex flex-col">
-      <Header onAuthClick={openAuthModal}/>
+      <Header onAuthClick={openAuthModal} user={user} />
       {showHero && heroContent}
       <main className="flex-1 max-w-7xl mx-auto mt-5 w-full">{children}</main>
       <Footer />
