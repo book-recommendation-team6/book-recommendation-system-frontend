@@ -1,3 +1,4 @@
+import '@ant-design/v5-patch-for-react-19';
 import { useState } from 'react'
 import './App.css'
 import Home from './pages/Home'
