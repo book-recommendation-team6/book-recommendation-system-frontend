@@ -18,6 +18,8 @@ import AdminDashboard from "./pages/Admin/AdminDashboard"
 import AdminUsers from "./pages/Admin/AdminUsers"
 import AdminBooks from "./pages/Admin/AdminBooks"
 import AdminAddBook from "./pages/Admin/AdminAddbook"
+import PdfToEpub from "./pages/PdfToEpub";
+import OAuthRedirect from "./pages/Auth/OAuthRedirect.jsx";
 import AdminEditBook from "./pages/Admin/AdminEditbook"
 
 function App() {
@@ -61,6 +63,8 @@ function App() {
           }
         />
         <Route path={PATHS.ADMIN.ADD_BOOK} element={<AdminAddBook />} />
+        <Route path="/reader" element={<PdfToEpub />} />
+        <Route path="/oauth2/success" element={<OAuthRedirect />} />
         <Route path={PATHS.ADMIN.EDIT_BOOK} element={<AdminEditBook />} />
         {/* <Route path="/reader" element={<PdfToEpub />} /> */}
       </Routes>

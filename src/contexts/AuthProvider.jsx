@@ -1,21 +1,14 @@
 // src/contexts/AuthContext.jsx
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import {
-  setAuthData,
-  getAuthData,
-  getToken,
-  clearAuthData,
-} from "../utils/storage";
-import {
-  login as loginService,
-  register as registerService,
-} from "../services/authService";
+import { setAuthData, getAuthData, getToken, clearAuthData } from "../utils/storage";
+import { login as loginService, register as registerService, getUser } from "../services/authService";
 import { AuthContext } from "./AuthContext";
 
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [jwt, setJwt] = useState(getToken());
 
   // Initialize Auth state from localStorage
   useEffect(() => {
@@ -29,14 +22,38 @@ function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
+  const fetchUserProfile = useCallback(async () => {
+        const token = getToken();
+        console.log("Fetching user profile with token:", token);
+        if (!token) return null;
+        setLoading(true);
+        try {
+            const userData = await getUser();
+            console.log("✅ User profile fetched successfully:", userData);
+            setUser(userData);
+            setAuthData(token, userData);
+            setError(null);
+            return userData;
+        } catch (err) {
+            console.error("❌ Lỗi khi lấy user:", err);
+            if (err.response?.status === 401) {
+                clearAuthData();
+                setUser(null);
+                setJwt(null);
+            }
+            setError("Phiên đăng nhập hết hạn.");
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
   // Login function
   const login = useCallback(async (email_input, password) => {
     setLoading(true);
     try {
       const response = await loginService(email_input, password);
-      console.log("Login response:", response);
       const { jwt, id, username, email, role } = response;
-
       const userData = { id, username, email, role };
       setAuthData(jwt, userData);
       setUser(userData);
@@ -59,22 +76,13 @@ function AuthProvider({ children }) {
     try {
       const response = await registerService(userData);
       console.log("Register response:", response);
-      const { jwt, id, username, email, role } = response;
-      const newUser = { id, username, email, role };
-      setAuthData(jwt, newUser);
-      setUser(newUser);
       return {
         success: true,
-        token: jwt,
-        data: newUser,
       };
     } catch (error) {
       console.error("Register failed:", error);
       return {
         success: false,
-        error: error?.response?.data.message || "Register failed",
-        data: null,
-        token: null,
       };
     } finally {
       setLoading(false);
@@ -99,6 +107,13 @@ function AuthProvider({ children }) {
   //   setUser(updatedUser);
   // }, [user]);
 
+  const setAuthTokenAndFetchUser = useCallback(async (token) => {
+      if (!token) return;
+      setAuthData(token, null);
+      setJwt(token);
+      await fetchUserProfile();
+    }, [fetchUserProfile]);
+
   const value = {
     user,
     loading,
@@ -106,6 +121,8 @@ function AuthProvider({ children }) {
     login,
     register,
     logout,
+    fetchUserProfile,
+    setAuthTokenAndFetchUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

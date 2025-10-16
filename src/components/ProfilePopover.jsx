@@ -66,6 +66,10 @@ const ProfilePopover = ({ user, logout }) => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.18 } }
   };
 
+  const displayName = user?.fullName || user?.name || user?.username || 'Người dùng';
+  const email = user?.email || 'Chưa cập nhật email';
+  const avatarSrc = user?.avatarUrl || user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop';
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* User Avatar Button */}
@@ -75,8 +79,8 @@ const ProfilePopover = ({ user, logout }) => {
       >
         <span className="text-sm font-medium hidden md:block">{user?.username || 'No Name'}</span>
         <img
-          src={user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop'}
-          alt={user?.name}
+          src={avatarSrc}
+          alt={displayName}
           className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
         />
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -97,13 +101,13 @@ const ProfilePopover = ({ user, logout }) => {
           <div className="p-2 border-b border-gray-700">
             <div className="flex items-center bg-gray-900 gap-3 p-2 rounded-xl">
               <img
-                src={user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop'}
-                alt={user?.name }
+                src={avatarSrc}
+                alt={displayName} 
                 className="w-16 h-16 rounded-full object-cover"
               />
               <div>
-                <p className="font-semibold text-white">{user?.name || user?.username || 'Sĩ Cường'}</p>
-                <p className="text-sm text-gray-400">{user?.email || 'sicuong@gmail.com'}</p>
+                <p className="font-semibold text-white">{displayName}</p>
+                <p className="text-sm text-gray-400">{email}</p>
               </div>
             </div>
           </div>
