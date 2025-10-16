@@ -16,7 +16,7 @@ const ManageAccount = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   console.log("rerender")
-
+  
   const pathToTab = useMemo(
     () => ({
       [PATHS.MANAGE_ACCOUNT_REDIRECT.PROFILE]: "profile",
@@ -36,6 +36,7 @@ const ManageAccount = () => {
     [],
   )
 
+  //Active tab for Sidebar
   const activeTab = pathToTab[pathname] || "profile"
 
   const breadcrumbItems = useMemo(() => [{ title: "Trang chủ" }, { title: "Quản lí tài khoản" }], [])

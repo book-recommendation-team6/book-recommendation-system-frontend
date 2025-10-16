@@ -1,13 +1,23 @@
-"use client"
-
-import React, { useMemo } from "react"
+import React, { useEffect } from "react"
 import { History } from "lucide-react"
 import EmptyState from "../../components/account/EmptyState"
 import BookCard from "../../components/BookCard"
-import books from "../../data/book"
+// import books from "../../data/book"
+import { getUserHistory } from "../../services/historyService"
+import useAuth from "../../hook/useAuth"
+
 const HistorySection = React.memo(() => {
   // Update later to fetch real data
-  const history = []
+  const [books, setBooks] = React.useState([]);
+  const { user } = useAuth();
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      const booksData = await getUserHistory(user.id);
+      setBooks(booksData);
+    };
+    fetchData();
+  }, []);
 
   if (books.length === 0) {
     return (
