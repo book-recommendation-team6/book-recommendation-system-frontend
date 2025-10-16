@@ -3,6 +3,7 @@ import "./App.css"
 import Home from "./pages/Home"
 import { Routes, Route } from "react-router-dom"
 import BookDetail from "./pages/BookDetail"
+import CategoryBooks from "./pages/CategoryBooks"
 
 import AuthProvider from "./contexts/AuthProvider"
 import ProtectedRoute from "./components/ProtectedRoute"
@@ -24,6 +25,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/books/:id" element={<BookDetail />} />
+        <Route path={PATHS.CATEGORY} element={<CategoryBooks />} />
         <Route
           path={PATHS.MANAGE_ACCOUNT_REDIRECT.ROOT}
           element={

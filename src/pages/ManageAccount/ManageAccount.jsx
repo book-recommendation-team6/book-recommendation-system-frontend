@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo, useCallback, useContext, useState } from "react"
 import { Breadcrumb } from "antd"
 import MainLayout from "../../layout/MainLayout"
@@ -8,6 +6,7 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom"
 import { PATHS } from "../../constant/routePath"
 import { AuthContext } from "../../contexts/AuthContext"
 import { Menu, X } from "lucide-react"
+import {Link} from "react-router-dom"
 
 const ManageAccount = () => {
   const { pathname } = useLocation()
@@ -16,7 +15,7 @@ const ManageAccount = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   console.log("rerender")
-  
+
   const pathToTab = useMemo(
     () => ({
       [PATHS.MANAGE_ACCOUNT_REDIRECT.PROFILE]: "profile",
@@ -39,7 +38,30 @@ const ManageAccount = () => {
   //Active tab for Sidebar
   const activeTab = pathToTab[pathname] || "profile"
 
-  const breadcrumbItems = useMemo(() => [{ title: "Trang chủ" }, { title: "Quản lí tài khoản" }], [])
+  // Tab labels for breadcrumb
+  const tabLabels = useMemo(
+    () => ({
+      profile: "Thông tin tài khoản",
+      "favorite-books": "Sách yêu thích",
+      "history-reading": "Lịch sử đọc sách",
+    }),
+    [],
+  )
+
+  const breadcrumbItems = useMemo(
+    () => [
+      { 
+        title: <Link to="/" className="text-gray-600 hover:text-blue-600 transition-colors">Trang chủ</Link>
+      }, 
+      { 
+        title: <span className="text-gray-800 font-medium">Quản lí tài khoản</span>
+      },
+      { 
+        title: <span className="text-gray-800 font-medium">{tabLabels[activeTab]}</span>
+      }
+    ],
+    [activeTab, tabLabels],
+  )
 
   const handleTabChange = useCallback(
     (tab) => {

@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, Suspense } from 'react';
 import MainLayout from '../layout/MainLayout';
 import { Breadcrumb } from 'antd';
 import scrollToTop from '../utils/scrollToTop';
-
+import {Link} from "react-router-dom";
 // // Import all the new components
 const BookCover = React.lazy(() => import('../components/book-detail/BookCover'));
 const BookInfo = React.lazy(() => import('../components/book-detail/BookInfo'));
@@ -131,8 +131,8 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
   }, [book.title]);
 
   const breadcrumbItems = useMemo(() => [
-    { title: 'Home' },
-    { title: <a href="">Book Detail</a> },
+    { title: <Link to="/">Trang chủ</Link> },
+    { title: <p href="">Chi tiết sách</p> },
   ], []);
 
   return (
