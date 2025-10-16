@@ -6,9 +6,10 @@ import UserAvatar from "./UserAvatar"
 
 const PersonalInfoForm = React.memo(({ user, onSubmit }) => {
   const [formData, setFormData] = useState({
-    name: user.name,
-    phone: user.phone,
-    userId: user.id,
+    username: user.username || "",
+    phoneNumber: user.phone_number || "",
+    avatarUrl: user.avatar_url || "",
+    fullName: user.full_name || "",
   })
 
   const handleChange = (e) => {
@@ -28,7 +29,7 @@ const PersonalInfoForm = React.memo(({ user, onSubmit }) => {
   return (
     <div className="flex flex-col md:grid md:grid-cols-3 gap-6 sm:gap-8">
       <div className="order-first md:order-last md:col-span-1 flex flex-col items-center">
-        <UserAvatar src={user.avatar} alt={user.name} size="lg" className="mb-3 sm:mb-4" />
+        <UserAvatar src={user.avatar} alt={user.full_name} size="lg" className="mb-3 sm:mb-4" />
         <button
           onClick={handleChangeAvatar}
           className="px-4 py-2 bg-gray-900 text-white rounded-full text-sm hover:bg-gray-800 transition-colors"
@@ -42,8 +43,8 @@ const PersonalInfoForm = React.memo(({ user, onSubmit }) => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Họ và tên</label>
           <input
             type="text"
-            name="name"
-            value={formData.name}
+            name="fullName"
+            value={formData.fullName}
             onChange={handleChange}
             className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm sm:text-base"
           />
@@ -53,8 +54,8 @@ const PersonalInfoForm = React.memo(({ user, onSubmit }) => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại</label>
           <input
             type="tel"
-            name="phone"
-            value={formData.phone}
+            name="phoneNumber"
+            value={formData.phoneNumber}
             onChange={handleChange}
             className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm sm:text-base"
           />
@@ -65,7 +66,7 @@ const PersonalInfoForm = React.memo(({ user, onSubmit }) => {
           <input
             type="text"
             name="userId"
-            value={formData.userId}
+            value={user.id}
             disabled
             className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed text-sm sm:text-base"
           />

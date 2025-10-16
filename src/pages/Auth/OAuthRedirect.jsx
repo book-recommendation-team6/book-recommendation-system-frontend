@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {useAuth} from '../../contexts/AuthContext';
+import useAuth from '../../hook/useAuth';
 
 const OAuthRedirect = () => {
     const navigate = useNavigate();
@@ -13,7 +13,7 @@ const OAuthRedirect = () => {
             const params = new URLSearchParams(location.search);
             const token = params.get('token');
             const error = params.get('error');
-
+            console.log('OAuth2 Redirect Params:', { token, error });
             if (error) {
                 setMessage(`Đăng nhập thất bại: ${error}`);
                 setTimeout(() => navigate('/'), 2000);
@@ -25,7 +25,7 @@ const OAuthRedirect = () => {
                     setMessage('Đăng nhập thành công! Đang tải thông tin người dùng...');
                     await setAuthTokenAndFetchUser(token);
                     setMessage('Đăng nhập thành công! Đang chuyển hướng...');
-                    setTimeout(() => navigate('/'), 1500);
+                    setTimeout(() => navigate('/'), 5000);
                 } catch (e) {
                     console.error('OAuth redirect error:', e);
                     setMessage('Lỗi khi xử lý đăng nhập.');

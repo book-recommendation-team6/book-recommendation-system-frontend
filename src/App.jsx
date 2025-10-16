@@ -3,8 +3,9 @@ import "./App.css"
 import Home from "./pages/Home"
 import { Routes, Route } from "react-router-dom"
 import BookDetail from "./pages/BookDetail"
+import CategoryBooks from "./pages/CategoryBooks"
 
-import {AuthProvider} from "./contexts/Authcontext"
+import AuthProvider from "./contexts/AuthProvider"
 import ProtectedRoute from "./components/ProtectedRoute"
 
 import ManageAccount from "./pages/ManageAccount/ManageAccount"
@@ -19,6 +20,7 @@ import AdminBooks from "./pages/Admin/AdminBooks"
 import AdminAddBook from "./pages/Admin/AdminAddbook"
 import PdfToEpub from "./pages/PdfToEpub";
 import OAuthRedirect from "./pages/Auth/OAuthRedirect.jsx";
+import AdminEditBook from "./pages/Admin/AdminEditbook"
 
 function App() {
   return (
@@ -26,6 +28,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/books/:id" element={<BookDetail />} />
+        <Route path={PATHS.CATEGORY} element={<CategoryBooks />} />
         <Route
           path={PATHS.MANAGE_ACCOUNT_REDIRECT.ROOT}
           element={
@@ -62,9 +65,11 @@ function App() {
         <Route path={PATHS.ADMIN.ADD_BOOK} element={<AdminAddBook />} />
         <Route path="/reader" element={<PdfToEpub />} />
         <Route path="/oauth2/success" element={<OAuthRedirect />} />
+        <Route path={PATHS.ADMIN.EDIT_BOOK} element={<AdminEditBook />} />
+        {/* <Route path="/reader" element={<PdfToEpub />} /> */}
       </Routes>
     </AuthProvider>
   )
 }
 
-export default App
+export default App;

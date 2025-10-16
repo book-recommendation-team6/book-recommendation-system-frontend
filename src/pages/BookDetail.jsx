@@ -1,8 +1,9 @@
 import React, { useMemo, useCallback, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom'; // Thêm import này
 import MainLayout from '../layout/MainLayout';
 import { Breadcrumb } from 'antd';
 import scrollToTop from '../utils/scrollToTop';
-
+import {Link} from "react-router-dom";
 // // Import all the new components
 const BookCover = React.lazy(() => import('../components/book-detail/BookCover'));
 const BookInfo = React.lazy(() => import('../components/book-detail/BookInfo'));
@@ -38,9 +39,13 @@ class ErrorBoundary extends React.Component {
 }
 
 const BookDetail = () => {
+  // Thêm hook useNavigate
+  const navigate = useNavigate();
+  
   scrollToTop();
   // Mock data - would come from API/props in real app
   const book = useMemo(() => ({
+    id: '1', // Thêm ID cho sách
     title: 'Mưa đỏ',
     rating: 4.5,
     reviews: '14 Đánh giá',
@@ -117,8 +122,9 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
   // Event handlers
   const handleRead = useCallback(() => {
     console.log('Start reading:', book.title);
-    // Navigate to reader page
-  }, [book.title]);
+    // Navigate to reader page with book ID
+    navigate(`/reader/${book.id}`);
+  }, [book.title, book.id, navigate]);
 
   const handleFavorite = useCallback(() => {
     console.log('Add to favorites:', book.title);
@@ -131,8 +137,8 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
   }, [book.title]);
 
   const breadcrumbItems = useMemo(() => [
-    { title: 'Home' },
-    { title: <a href="">Book Detail</a> },
+    { title: <Link to="/">Trang chủ</Link> },
+    { title: <p href="">Chi tiết sách</p> },
   ], []);
 
   return (
