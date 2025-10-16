@@ -47,12 +47,7 @@ function AuthProvider({ children }) {
       };
     } catch (error) {
       console.error("Login failed:", error);
-      return {
-        success: false,
-        error: error?.response?.data.message || "Login failed",
-        data: null,
-        token: null,
-      };
+      throw new Error(error?.response?.data.message || "Login failed");
     } finally {
       setLoading(false);
     }

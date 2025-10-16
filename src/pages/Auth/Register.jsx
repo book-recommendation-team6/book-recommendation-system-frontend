@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import useAuth from '../../hook/useAuth.jsx';
 import { validateSignup } from '../../utils/validatorInput.js';
+import { useMessage } from '../../contexts/MessageProvider.jsx';
 
 const INITIAL_FORM_STATE = {
   email: '',
@@ -18,6 +19,8 @@ const Register = ({ onModeChange }) => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [errorInputs, setErrorInputs] = useState({});
   
+  const message = useMessage();
+  // Access register function from useAuth hook
   const { register } = useAuth();
 
   const passwordMismatch = formData.password && 
@@ -80,13 +83,13 @@ const Register = ({ onModeChange }) => {
     try {
       const result = await register(formData);
       if (result.success) {
-        window.alert('Đăng ký thành công!');
+        message.success('Đăng ký thành công! Vui lòng đăng nhập.');
         onModeChange('login');
       } else {
-        window.alert(result.error);
+        message.error(result.error);
       }
     } catch (err) {
-      window.alert(err.message);
+      message.error(err.message);
     }
   };
 
