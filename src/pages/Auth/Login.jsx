@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import useAuth from '../../hook/useAuth.jsx';
 
+const BACKEND_URL = "http://localhost:8080";
+
 const Login = ({ onModeChange, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,13 +38,13 @@ const Login = ({ onModeChange, onClose }) => {
   };
 
 
-  const handleGoogleLogin = () => {
-    window.location.href = 'https://accounts.google.com';
-  };
+const handleGoogleLogin = () => {
+  window.location.href = `${BACKEND_URL}/oauth2/authorization/google`;
+};
 
-  const handleFacebookLogin = () => {
-    window.location.href = 'https://www.facebook.com';
-  };
+const handleFacebookLogin = () => {
+  window.location.href = `${BACKEND_URL}/oauth2/authorization/facebook`;
+};
 
   return (
     <div className="w-full max-w-md">

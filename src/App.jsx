@@ -4,7 +4,7 @@ import Home from "./pages/Home"
 import { Routes, Route } from "react-router-dom"
 import BookDetail from "./pages/BookDetail"
 
-import AuthProvider from "./contexts/AuthProvider"
+import {AuthProvider} from "./contexts/Authcontext"
 import ProtectedRoute from "./components/ProtectedRoute"
 
 import ManageAccount from "./pages/ManageAccount/ManageAccount"
@@ -18,6 +18,7 @@ import AdminUsers from "./pages/Admin/AdminUsers"
 import AdminBooks from "./pages/Admin/AdminBooks"
 import AdminAddBook from "./pages/Admin/AdminAddbook"
 import PdfToEpub from "./pages/PdfToEpub";
+import OAuthRedirect from "./pages/Auth/OAuthRedirect.jsx";
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
         />
         <Route path={PATHS.ADMIN.ADD_BOOK} element={<AdminAddBook />} />
         <Route path="/reader" element={<PdfToEpub />} />
+        <Route path="/oauth2/success" element={<OAuthRedirect />} />
       </Routes>
     </AuthProvider>
   )

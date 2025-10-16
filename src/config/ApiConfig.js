@@ -32,12 +32,12 @@ api.interceptors.response.use(
     const { status, config } = error.response;
     if (
       status === 401 &&
-      config.url !== "/Auth/login" &&
-      config.url !== "/Auth/register"
+      config.url !== "/auth/login" &&
+      config.url !== "/auth/register"
     ) {
       clearAuthData();
-      window.location.href =
-        "/login?message=Your+session+has+expired.+Please+log+in+again.";
+      // window.location.href =
+      //   "/login?message=Your+session+has+expired.+Please+log+in+again.";
       return new Promise(() => {});
     }
     return Promise.reject(error);
