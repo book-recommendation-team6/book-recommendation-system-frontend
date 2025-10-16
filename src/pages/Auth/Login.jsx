@@ -59,9 +59,11 @@ const Login = ({ onModeChange, onClose }) => {
           <input
             type="email"
             value={email}
+            name="email"
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             placeholder="Email"
+            autoComplete="email"
             // required
           />
         </div>
@@ -70,9 +72,11 @@ const Login = ({ onModeChange, onClose }) => {
           <input
             type={showPassword ? 'text' : 'password'}
             value={password}
+            name="password"
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 pr-12"
             placeholder="Mật khẩu"
+            autoComplete="password"
             // required
           />
           <button

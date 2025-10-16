@@ -13,6 +13,14 @@ export function setAuthData(token, user) {
     }
 }
 
+export function updateAuthUser(updatedUser) {
+    try {
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedUser))
+    } catch (error) {
+        console.error('Failed to update Auth user:', error)
+    }
+}
+
 export function getAuthData() {
     try {
         const token = localStorage.getItem(AUTH_TOKEN_KEY)

@@ -4,6 +4,9 @@ import AccountTabs from "../../components/account/AccountTab"
 import PersonalInfoForm from "../../components/account/PersonalInfoForm"
 import SecurityForm from "../../components/account/SecurityForm"
 import { AuthContext } from "../../contexts/AuthContext"
+import { updateUserProfile } from "../../services/userService"
+import {updateAuthUser} from "../../utils/storage"
+
 const AccountInfoSection = React.memo(() => {
   const [activeSubTab, setActiveSubTab] = useState("personal")
   const { user } = React.useContext(AuthContext)
@@ -13,8 +16,15 @@ const AccountInfoSection = React.memo(() => {
     { id: "security", label: "Tài khoản và bảo mật" },
   ]
 
-  const handleSubmit = (formData) => {
+  const handleSubmit = async (formData) => {
     console.log("Update user:", formData)
+    try{
+      const userNewInfor = await updateUserProfile(user.id, formData)
+      console.log("User updated successfully:", userNewInfor)
+      updateAuthUser(userNewInfor)
+    } catch (error) {
+      console.error("Failed to update user:", error)
+    }
     // Handle form submission logic here
     //Update user data here
   }
