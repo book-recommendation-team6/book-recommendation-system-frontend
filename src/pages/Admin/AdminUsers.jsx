@@ -23,7 +23,7 @@ const AdminUsers = () => {
   const [users, setUsers] = useState(sampleUsers)
   const [isBanModalOpen, setIsBanModalOpen] = useState(false)
   const [userToBan, setUserToBan] = useState(null)
-
+  
   const handleLockUser = (userId) => {
     setUserToBan(userId)
     setIsBanModalOpen(true)

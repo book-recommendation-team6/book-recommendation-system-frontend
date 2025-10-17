@@ -10,6 +10,7 @@ function AuthProvider({ children }) {
   const [error, setError] = useState(null);
   const [jwt, setJwt] = useState(getToken());
 
+  console.log("AuthProvider rendered. Current user:", user);
   // Initialize Auth state from localStorage
   useEffect(() => {
     const storedUser = getAuthData().user;
