@@ -5,7 +5,7 @@ import  useAuth  from '../hook/useAuth';
 const ProtectedRoute = ({ children }) => {
   const { user, isAuthenticated, loading } = useAuth();
 
-  if (loading) {
+  if (loading && user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

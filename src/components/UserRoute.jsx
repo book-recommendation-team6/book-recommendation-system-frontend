@@ -9,11 +9,7 @@ import useAuth from '../hook/useAuth';
 const UserRoute = ({ children }) => {
   const { user, isAuthenticated, loading } = useAuth();
 
-  console.log("🔍 UserRoute - User:", user);
-  console.log("🔍 UserRoute - User Role:", user?.role);
-  console.log("🔍 UserRoute - Is Authenticated:", isAuthenticated);
-
-  if (loading) {
+  if (loading && user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
