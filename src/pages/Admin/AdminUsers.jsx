@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import AdminLayout from "../../layout/AdminLayout"
 import SearchBar from "../../components/admin/SearchBar"
 import UserTable from "../../components/admin/UserTable"
 import { Modal, message } from "antd"
+import { getUser } from "../../services/manageUserService"
 
 // Sample data - replace with actual API call
 const sampleUsers = Array(20)
@@ -20,10 +21,36 @@ const sampleUsers = Array(20)
 
 const AdminUsers = () => {
   const [searchQuery, setSearchQuery] = useState("")
-  const [users, setUsers] = useState(sampleUsers)
+  const [users, setUsers] = useState([])
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await getUser();
+        setUsers(data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    }
+
+    fetchUsers();
+  }, []);
+
   const [isBanModalOpen, setIsBanModalOpen] = useState(false)
   const [userToBan, setUserToBan] = useState(null)
   
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await getUser();
+        console.log("Fetched users:", data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    }
+    fetchUsers();
+  }, []);
+
   const handleLockUser = (userId) => {
     setUserToBan(userId)
     setIsBanModalOpen(true)
@@ -50,9 +77,9 @@ const AdminUsers = () => {
 
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.userId.includes(searchQuery),
+      user.id.includes(searchQuery),
   )
 
   return (
