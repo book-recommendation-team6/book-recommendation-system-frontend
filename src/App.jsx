@@ -20,10 +20,11 @@ import AdminDashboard from "./pages/Admin/AdminDashboard"
 import AdminUsers from "./pages/Admin/AdminUsers"
 import AdminBooks from "./pages/Admin/AdminBooks"
 import AdminAddBook from "./pages/Admin/AdminAddbook"
-import PdfToEpub from "./pages/PdfToEpub";
 import OAuthRedirect from "./pages/Auth/OAuthRedirect.jsx";
 import AdminEditBook from "./pages/Admin/AdminEditbook"
 
+import BookReader from "./pages/BookReader.jsx"
+import EpubCoreViewer from "./pages/BookReader/BookReader.jsx"
 function App() {
   return (
     <AuthProvider>
@@ -110,9 +111,8 @@ function App() {
         />
         
         {/* Other Routes */}
-        <Route path="/reader" element={<PdfToEpub />} />
         <Route path="/oauth2/success" element={<OAuthRedirect />} />
-        {/* <Route path="/reader" element={<PdfToEpub />} /> */}
+        <Route path="/reader" element={<EpubCoreViewer />} />
       </Routes>
     </AuthProvider>
   )
