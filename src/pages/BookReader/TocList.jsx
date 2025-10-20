@@ -26,7 +26,7 @@ const TocRow = ({ item, depth, currentHref, goTo }) => {
         className={`w-full text-left py-2 rounded px-2 ${
           isActive
             ? "text-emerald-400"
-            : "text-gray-200 hover:text-white hover:bg-white/5"
+            : "text-black dark:text-gray-200 dark:hover:text-white hover:bg-gray-500/35"
         }`}
         style={{ paddingLeft: `${depth * 14 + 8}px` }}
         title={item.label}

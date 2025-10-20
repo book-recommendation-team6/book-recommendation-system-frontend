@@ -2,15 +2,40 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import ePub from "epubjs";
 
+import {ChevronLeft, ChevronRight, Bookmark, BookmarkCheck} from "lucide-react";
+
 import SidePanel from "./SidePanel";
+import { AnimatePresence } from "framer-motion";
+import useTheme from "../../hook/useTheme"; 
 
 const LS_POS_KEY = "reader:cfi";
 const LS_BM_KEY = "reader:bookmarks";
+
+
 
 export default function EpubCoreViewer({
   src = "https://tiemsach.org/ebook/Lich Su Van Vat - Bill Bryson.epub",
   onBack,
 }) {
+
+  const [theme, setTheme] = useTheme();
+
+  const resolveTheme = () => {
+    if (theme === 'dark') return 'dark';
+    if (theme === 'light') return 'light';
+    // system: nhìn class .dark trên <html> do hook đã set
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  };
+
+  useEffect(() => {
+    const r = renditionRef.current;
+    if (!r) return;
+    const apply = () => r.themes.select(resolveTheme());
+
+    apply();                 // ⟵ áp ngay khi theme đổi
+    r.on("rendered", apply); // ⟵ áp lại sau mỗi lần render trang
+    return () => r.off("rendered", apply);
+  }, [theme]);
 
   // Refs to epub.js objects
   const viewerRef = useRef(null);
@@ -21,7 +46,7 @@ export default function EpubCoreViewer({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   // UI states
-  const [dark, setDark] = useState(true);
+  // const [dark, setDark] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false); // thay cho tocOpen
   const [panelTab, setPanelTab] = useState("toc"); // "toc" | "bm"
   const [editingBmId, setEditingBmId] = useState(null); // id đang sửa
@@ -108,7 +133,7 @@ export default function EpubCoreViewer({
       h1: { fontWeight: "700", letterSpacing: "0.02em" },
       "p, li": { margin: "0 0 1em" },
     });
-    rendition.themes.select(dark ? "dark" : "light");
+    rendition.themes.select(resolveTheme());
     rendition.themes.fontSize("110%");
 
     // Meta + TOC + Locations (đếm trang)
@@ -190,17 +215,18 @@ export default function EpubCoreViewer({
       } catch {}
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, dark, saveCFI]); // đổi theme sẽ apply ngay lần init
+  }, [src, theme, saveCFI]); // đổi theme sẽ apply ngay lần init
 
+  
   // Actions
   const goPrev = () => renditionRef.current?.prev();
   const goNext = () => renditionRef.current?.next();
   const goTo = (target) => renditionRef.current?.display(target);
-  const toggleTheme = () => {
-    const next = !dark;
-    setDark(next);
-    renditionRef.current?.themes.select(next ? "dark" : "light");
-  };
+  // const toggleTheme = () => {
+  //   const next = !dark;
+  //   setDark(next);
+  //   renditionRef.current?.themes.select(next ? "dark" : "light");
+  // };
 
   // “Trang X / Y” — input đổi trang
   const [pageInput, setPageInput] = useState("");
@@ -266,9 +292,9 @@ export default function EpubCoreViewer({
   );
 
   return (
-    <div className="relative h-screen select-none">
+    <div className="relative h-screen select-none bg-white dark:bg-gray-800">
       {/* Header */}
-      <div className="fixed top-0 inset-x-0 z-20 h-14 bg-[#29292B] text-gray-100 backdrop-blur flex items-center px-3">
+      <div className="fixed top-0 inset-x-0 z-20 h-14 bg-[#29292B] dark:bg-gray-600 text-gray-100 backdrop-blur flex items-center px-3">
         {/* Back */}
         <button
           onClick={onBack}
@@ -297,11 +323,11 @@ export default function EpubCoreViewer({
         {/* Nút phải */}
         <div className="ml-auto flex items-center gap-2">
           <button
-            onClick={toggleTheme}
+            onClick={() => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'))}
             className="px-2 py-1 rounded hover:bg-white/10"
             title="Chế độ tối/sáng"
           >
-            🌙
+            {resolveTheme() === 'dark' ? '🌙' : '☀️'}
           </button>
           {/* Bookmark: bấm để lưu/bỏ lưu, Ctrl+click hoặc right-click để mở panel Dấu trang */}
           <button
@@ -320,7 +346,7 @@ export default function EpubCoreViewer({
                 : "Thêm dấu trang tại vị trí này"
             }
           >
-            {isBookmarked ? "★" : "☆"}
+            {isBookmarked ? <BookmarkCheck /> : <Bookmark />}
           </button>
           <button
             onClick={() => openPanel("toc")}
@@ -363,17 +389,17 @@ export default function EpubCoreViewer({
       {/* Arrows lật trang */}
       <button
         onClick={goPrev}
-        className="fixed text-5xl left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full text-red-500 hover:bg-white/20"
+        className="fixed text-5xl left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full text-gray-500 dark:text-white dark:hover:bg-white/20 hover:bg-gray-600 hover:text-gray-200"
         title="Trang trước"
       >
-        ‹
+        <ChevronLeft size={32} />
       </button>
       <button
         onClick={goNext}
-        className="fixed right-4 text-5xl top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white text-red-500 hover:bg-white/20"
+        className="fixed right-4 text-5xl top-1/2 -translate-y-1/2 z-10 p-3 rounded-full text-gray-500 dark:text-white dark:hover:bg-white/20 hover:bg-gray-600 hover:text-gray-200"
         title="Trang sau"
       >
-        ›
+        <ChevronRight size={32}/>
       </button>
 
       {/* Footer: đếm trang */}
@@ -382,27 +408,24 @@ export default function EpubCoreViewer({
       </div>
 
       {/* TOC Drawer */}
-      {panelOpen && (
-        <SidePanel
-          dark={dark}
-          onClose={() => setPanelOpen(false)}
-          tab={panelTab}
-          setTab={setPanelTab}
-          toc={toc}
-          currentHref={currentHref}
-          goTo={(t) => {
-            goTo(t.cfi || t.href);
-          }}
-          bookmarks={bookmarks}
-          onGoBookmark={(b) => {
-            goTo(b.cfi);
-          }}
-          editingBmId={editingBmId}
-          setEditingBmId={setEditingBmId}
-          renameBookmark={renameBookmark}
-          removeBookmark={removeBookmark}
-        />
-      )}
+      <AnimatePresence>
+        {panelOpen && (
+          <SidePanel
+            onClose={() => setPanelOpen(false)}
+            tab={panelTab}
+            setTab={setPanelTab}
+            toc={toc}
+            currentHref={currentHref}
+            goTo={(t) => { goTo(t.cfi || t.href); }}
+            bookmarks={bookmarks}
+            onGoBookmark={(b) => { goTo(b.cfi); }}
+            editingBmId={editingBmId}
+            setEditingBmId={setEditingBmId}
+            renameBookmark={renameBookmark}
+            removeBookmark={removeBookmark}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
