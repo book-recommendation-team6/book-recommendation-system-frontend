@@ -17,6 +17,9 @@ import {
   Heart,
 } from "lucide-react";
 
+import ListCard from "./components/ListCard";
+import StatCard from "./components/StatCard";
+
 const data = [
   { date: "10/8", value: 1900 },
   { date: "11/8", value: 2600 },
@@ -106,78 +109,6 @@ const topFavoriteBooks = [
   },
 ];
 
-// ====== UI components ngắn gọn ======
-const StatCard = ({ icon: Icon, label, value }) => (
-  <div className="h-full flex items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
-    <div className="h-12 w-12 rounded-full grid place-items-center bg-[#EEF5FF] dark:bg-slate-800">
-      <Icon className="h-6 w-6 text-indigo-500" />
-    </div>
-    <div>
-      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">
-        {formatNumber(value)}
-      </p>
-    </div>
-  </div>
-);
-
-const ListItem = ({ cover, title, subtitle, right, rightIcon }) => (
-  <div className="flex items-center justify-between py-3">
-    <div className="flex items-center gap-3 min-w-0">
-      <img
-        src={cover}
-        alt={title}
-        className="h-14 w-14 rounded-full object-cover ring-2 ring-white"
-      />
-      <div className="min-w-0">
-        <p className="font-medium text-slate-900 dark:text-white truncate">
-          {title}
-        </p>
-        <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-          {subtitle}
-        </p>
-      </div>
-    </div>
-    <div className="flex items-center gap-2 shrink-0">
-      <span className="text-slate-900 dark:text-white font-semibold">
-        {right}
-      </span>
-      {rightIcon}
-    </div>
-  </div>
-);
-
-const ListCard = ({ title, subtitle, items, variant = "rating" }) => (
-  <div className="rounded-3xl p-4 md:p-5 bg-white/60 dark:bg-slate-900/60 border border-white/70 dark:border-slate-800 shadow-sm">
-    <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 text-center md:text-left">
-      {title}
-    </h3>
-    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-      {subtitle}
-    </p>
-
-    <div className="mt-3 divide-y divide-slate-200/70 dark:divide-slate-800">
-      {items.map((it) => (
-        <ListItem
-          key={it.id}
-          cover={it.cover}
-          title={it.title}
-          subtitle={it.subtitle}
-          right={
-            variant === "rating" ? it.score.toFixed(1) : formatNumber(it.score)
-          }
-          rightIcon={
-            variant === "rating" ? (
-              <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
-            ) : (
-              <Heart className="h-5 w-5 text-rose-500" />
-            )
-          }
-        />
-      ))}
-    </div>
-  </div>
-);
 
 const AdminDashboard = () => {
   return (
@@ -210,7 +141,7 @@ const AdminDashboard = () => {
                   >
                     <XAxis
                       dataKey="date"
-                      tick={{ fill: "#334155", fontSize: 12 }}
+                      tick={{ fill: "#334155", fontSize: 12, fontWeight: 500 }}
                       axisLine={false}
                       tickLine={false}
                     />
@@ -238,6 +169,7 @@ const AdminDashboard = () => {
                     </defs>
                     <Bar
                       dataKey="value"
+                      name="Số lượng"
                       fill="url(#mint)"
                       radius={[12, 12, 12, 12]}
                       maxBarSize={42}
@@ -246,6 +178,7 @@ const AdminDashboard = () => {
                       <LabelList
                         dataKey="value"
                         position="top"
+                        className="dark:text-white"
                         formatter={formatNumber}
                         style={{ fontSize: 12, fill: "#0f172a" }}
                         offset={8}
