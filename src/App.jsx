@@ -23,6 +23,8 @@ import AdminAddBook from "./pages/Admin/AdminAddbook"
 import OAuthRedirect from "./pages/Auth/OAuthRedirect.jsx";
 import AdminEditBook from "./pages/Admin/AdminEditbook"
 
+import Upload from "./pages/Upload.jsx"
+
 import BookReader from "./pages/BookReader.jsx"
 import EpubCoreViewer from "./pages/BookReader/BookReader.jsx"
 function App() {
@@ -113,6 +115,7 @@ function App() {
         {/* Other Routes */}
         <Route path="/oauth2/success" element={<OAuthRedirect />} />
         <Route path="/reader" element={<EpubCoreViewer />} />
+        <Route path="/upload" element={<Upload />} />
       </Routes>
     </AuthProvider>
   )
