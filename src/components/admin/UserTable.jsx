@@ -1,39 +1,32 @@
 import React, { useState } from 'react';
-import { ConfigProvider, Button, Flex, Table } from 'antd';
+import { ConfigProvider, Button, Table } from 'antd';
 
 const UserTable = ({ users, onLockUser }) => {
   const columns = [
-    { title: 'Họ và tên', dataIndex: 'name' },
-    { title: 'User id', dataIndex: 'userId' },
+    { title: 'Họ và tên', dataIndex: 'username', render: (_, record) => record.username || record.name || '-' },
+    { title: 'User id', dataIndex: 'id' },
     { title: 'Email', dataIndex: 'email' },
-    { title: 'Ngày tạo', dataIndex: 'createdDate' },
+    { title: 'Ngày tạo', dataIndex: 'createdAt', render: (text) => new Date(text).toLocaleDateString() },
     {
       title: 'Trạng thái',
-      dataIndex: 'status',
-      render: (text) => (
-        <span
-          className={
-            text === 'Đang hoạt động'
-              ? 'text-teal-500 font-medium'
-              : text === 'Bị khóa'
-              ? 'text-red-500 font-medium'
-              : 'text-gray-500'
-          }
-        >
-          {text}
-        </span>
-      ),
+      dataIndex: 'activate',
+      render: (text, record) => {
+        const value = typeof record.activate !== 'undefined' ? record.activate : text;
+        const isActive =
+          value === true || value === 'true' || value === 1 || value === '1' || String(value).toLowerCase() === 'active' || String(value).toLowerCase() === 'activated';
+        return (
+          <span className={isActive ? 'text-teal-500 font-medium' : 'text-red-500 font-medium'}>
+            {isActive ? 'Đã xác thực' : 'Chưa xác thực'}
+          </span>
+        );
+      },
     },
     {
       title: 'Hành động',
       dataIndex: '',
       key: 'x',
       render: (_, record) => (
-        <Button 
-          color="danger" 
-          variant="outlined"
-          onClick={() => onLockUser(record.id)}
-        >
+        <Button type="primary" danger onClick={() => onLockUser(record.id)}>
           Ban
         </Button>
       ),
@@ -41,6 +34,7 @@ const UserTable = ({ users, onLockUser }) => {
   ];
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const start = () => {
     setLoading(true);
     // ajax request after empty completing
@@ -49,6 +43,7 @@ const UserTable = ({ users, onLockUser }) => {
       setLoading(false);
     }, 1000);
   };
+
   const onSelectChange = newSelectedRowKeys => {
     console.log('selectedRowKeys changed: ', newSelectedRowKeys);
     setSelectedRowKeys(newSelectedRowKeys);
@@ -59,13 +54,13 @@ const UserTable = ({ users, onLockUser }) => {
   };
   const hasSelected = selectedRowKeys.length > 0;
   return (
-    <Flex gap="middle" vertical>
-      <Flex align="center" gap="middle">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Button type="primary" onClick={start} disabled={!hasSelected} loading={loading}>
           Reload
         </Button>
         {hasSelected ? `Selected ${selectedRowKeys.length} items` : null}
-      </Flex>
+      </div>
       <ConfigProvider
         theme={{
           components: {
@@ -75,9 +70,16 @@ const UserTable = ({ users, onLockUser }) => {
           },
         }}
       >
-      <Table rowSelection={rowSelection}  pagination={{ position: ["bottomCenter"],  size: "large" }} columns={columns} dataSource={users} size="large"/>
+      <Table
+        rowKey={(record) => record.id}
+        rowSelection={rowSelection}
+        pagination={{ position: ["bottomCenter"], size: "large" }}
+        columns={columns}
+        dataSource={users}
+        size="large"
+      />
       </ConfigProvider>
-    </Flex>
+    </div>
 
   )
 }

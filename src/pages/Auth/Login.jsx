@@ -5,6 +5,7 @@ import useAuth from '../../hook/useAuth.jsx';
 const BACKEND_URL = "http://localhost:8080";
 
 import { useMessage } from '../../contexts/MessageProvider.jsx';
+
 const Login = ({ onModeChange, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,7 +20,6 @@ const Login = ({ onModeChange, onClose }) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     if (!email || !password) {
       console.log('Email or password is empty');
       message.warning('Vui lòng nhập đủ Email và Mật khẩu');

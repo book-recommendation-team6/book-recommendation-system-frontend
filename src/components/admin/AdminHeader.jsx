@@ -1,17 +1,18 @@
 import { Moon, Sun } from "lucide-react"
 import { Button } from "antd"
 import useTheme from "../../hook/useTheme"
+import useAuth from "../../hook/useAuth"
 
 const AdminHeader = ({ title = "ADMIN" }) => {
   const [theme, setTheme] = useTheme()
+  const { logout } = useAuth()
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
   }
 
   const handleLogout = () => {
-    // Add logout logic here
-    console.log("Logging out...")
+    logout()
   }
 
   return (
