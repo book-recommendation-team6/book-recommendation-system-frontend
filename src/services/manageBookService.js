@@ -1,10 +1,12 @@
 import api from "../config/ApiConfig.js";
 
-export const getBooks = async () => {
+export const getBooks = async (page = 0, size = 10) => {
   try {
-    const response = await api.get("/books");
+    const response = await api.get("/books", {
+      params: { page, size }
+    });
     console.log("Get books response:", response);
-    return response.data?.content ?? [];
+    return response;
   } catch (error) {
     console.error("Get books failed:", error.response?.data || error.message);
     throw error;

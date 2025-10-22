@@ -92,8 +92,7 @@ const AdminUsers = () => {
   const paginationConfig = {
     ...pagination,
     position: ["bottomCenter"],
-    showSizeChanger: true,
-    pageSizeOptions: ["10", "20", "50"],
+    showSizeChanger: false,
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
   }
 
