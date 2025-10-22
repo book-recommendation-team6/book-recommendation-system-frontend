@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Input, Select, Button, Upload, message, ConfigProvider } from "antd";
 import {
@@ -8,6 +8,8 @@ import {
 } from "@ant-design/icons";
 import { Camera, File} from "lucide-react";
 import AdminLayout from "../../layout/AdminLayout";
+import { PATHS } from "../../constant/routePath";
+import { createBook, getGenres } from "../../services/manageBookService";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -15,21 +17,28 @@ const { Option } = Select;
 const AdminAddbook = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [coverImage, setCoverImage] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
   const [bookFile, setBookFile] = useState(null);
-  const [selectedGenres, setSelectedGenres] = useState([]);
+  const [genreOptions, setGenreOptions] = useState([]);
+  const [genresLoading, setGenresLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Mock genres data - replace with actual API call if needed
-  const genres = [
-    "Công nghệ",
-    "Văn học",
-    "Kinh tế",
-    "Tâm lý",
-    "Khoa học",
-    "Lịch sử",
-    "Nghệ thuật",
-    "Thiếu nhi",
-  ];
+  useEffect(() => {
+    const fetchGenres = async () => {
+      setGenresLoading(true);
+      try {
+        const response = await getGenres();
+        setGenreOptions(response);
+      } catch (error) {
+        message.error("Không thể tải danh sách thể loại!");
+      } finally {
+        setGenresLoading(false);
+      }
+    };
+
+    fetchGenres();
+  }, []);
 
   const handleBack = () => {
     navigate(-1);
@@ -49,9 +58,10 @@ const AdminAddbook = () => {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      setCoverImage(e.target.result);
+      setCoverPreview(e.target.result);
     };
     reader.readAsDataURL(file);
+    setCoverFile(file);
     return false;
   };
 
@@ -80,25 +90,74 @@ const AdminAddbook = () => {
   };
 
   const handleRemoveCoverImage = () => {
-    setCoverImage(null);
+    setCoverPreview(null);
+    setCoverFile(null);
   };
 
-  const handleGenreChange = (value) => {
-    setSelectedGenres(value);
-  };
+  const handleSubmit = async (values) => {
+    if (!coverFile) {
+      message.error("Vui lòng tải ảnh bìa!");
+      return;
+    }
 
-  const handleRemoveGenre = (genreToRemove) => {
-    const newGenres = selectedGenres.filter((genre) => genre !== genreToRemove);
-    setSelectedGenres(newGenres);
-    form.setFieldsValue({ genre: newGenres });
-  };
+    if (!bookFile) {
+      message.error("Vui lòng tải tệp sách!");
+      return;
+    }
 
-  const handleSubmit = (values) => {
-    console.log("Form values:", values);
-    console.log("Cover image:", coverImage);
-    console.log("Book file:", bookFile);
-    message.success("Lưu sách thành công!");
-    // Add API call here
+    const authorNames = values.author
+      ?.split(",")
+      .map((name) => name.trim())
+      .filter(Boolean);
+
+    if (!authorNames?.length) {
+      message.error("Vui lòng nhập ít nhất một tác giả!");
+      return;
+    }
+
+    if (!values.genres?.length) {
+      message.error("Vui lòng chọn thể loại!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", values.title.trim());
+    formData.append("description", values.description.trim());
+
+    if (values.publicationYear) {
+      formData.append("publicationYear", values.publicationYear);
+    }
+
+    if (values.publisher) {
+      formData.append("publisher", values.publisher.trim());
+    }
+
+    authorNames.forEach((name) => {
+      formData.append("authorNames", name);
+    });
+
+    values.genres.forEach((genreId) => {
+      formData.append("genreIds", genreId);
+    });
+
+    formData.append("cover", coverFile);
+    formData.append("file", bookFile);
+
+    setSubmitting(true);
+    try {
+      const response = await createBook(formData);
+      message.success(response.message || "Thêm sách thành công!");
+      form.resetFields();
+      handleRemoveCoverImage();
+      handleRemoveBookFile();
+      navigate(PATHS.ADMIN.BOOKS);
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Không thể lưu sách, vui lòng thử lại!",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -192,7 +251,7 @@ const AdminAddbook = () => {
 
                 {/* Publication Year */}
                 <Form.Item
-                  name="year"
+                  name="publicationYear"
                   label={
                     <span className="text-gray-700 font-medium">
                       Năm xuất bản
@@ -214,7 +273,7 @@ const AdminAddbook = () => {
 
               {/* Genre */}
               <Form.Item
-                name="genre"
+                name="genres"
                 label={
                   <span className="text-gray-700 font-medium">Thể loại</span>
                 }
@@ -226,8 +285,7 @@ const AdminAddbook = () => {
                   placeholder="Chọn thể loại"
                   className="rounded-lg"
                   size="large"
-                  onChange={handleGenreChange}
-                  value={selectedGenres}
+                  loading={genresLoading}
                   tagRender={(props) => {
                     const { label, closable, onClose } = props;
                     return (
@@ -243,9 +301,9 @@ const AdminAddbook = () => {
                     );
                   }}
                 >
-                  {genres.map((genre) => (
-                    <Option key={genre} value={genre}>
-                      {genre}
+                  {genreOptions.map((genre) => (
+                    <Option key={genre.id} value={genre.id}>
+                      {genre.name}
                     </Option>
                   ))}
                 </Select>
@@ -298,22 +356,6 @@ const AdminAddbook = () => {
                   </ConfigProvider>
                 </div>
 
-                {/* Format */}
-                <Form.Item
-                  name="format"
-                  label={
-                    <span className="text-gray-700 font-medium">Định dạng</span>
-                  }
-                  rules={[
-                    { required: true, message: "Vui lòng chọn định dạng" },
-                  ]}
-                >
-                  <Select placeholder="pdf" className="rounded-lg" size="large">
-                    <Option value="pdf">pdf</Option>
-                    <Option value="docx">docx</Option>
-                    <Option value="doc">doc</Option>
-                  </Select>
-                </Form.Item>
                 {bookFile && (
                   <div className="mt-6 flex items-center justify-between bg-blue-50 p-3 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -335,6 +377,7 @@ const AdminAddbook = () => {
                   htmlType="submit"
                   size="large"
                   className="bg-teal-500 hover:bg-teal-600 border-none rounded-lg px-12 py-2 h-auto text-base font-medium"
+                  loading={submitting}
                 >
                   Lưu sách
                 </Button>
@@ -352,10 +395,10 @@ const AdminAddbook = () => {
                   showUploadList={false}
                   className="rounded-lg"
                 >
-                  {coverImage ? (
+                  {coverPreview ? (
                     <div className="relative">
                       <img
-                        src={coverImage || "/placeholder.svg"}
+                        src={coverPreview || "/placeholder.svg"}
                         alt="Cover preview"
                         className="w-full h-80 object-cover rounded-lg"
                       />
