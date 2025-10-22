@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Input, Select, Button, Upload, message, ConfigProvider } from "antd";
 import {
@@ -9,6 +9,9 @@ import {
 import { Camera, File} from "lucide-react";
 import AdminLayout from "../../layout/AdminLayout";
 
+import {uploadBook} from "../../services/bookUploadService";
+import {getGenres} from "../../services/genreService";
+
 const { TextArea } = Input;
 const { Option } = Select;
 
@@ -18,22 +21,37 @@ const AdminAddbook = () => {
   const [coverImage, setCoverImage] = useState(null);
   const [bookFile, setBookFile] = useState(null);
   const [selectedGenres, setSelectedGenres] = useState([]);
-
+  const [genres, setGenres] = useState([]);
   // Mock genres data - replace with actual API call if needed
-  const genres = [
-    "Công nghệ",
-    "Văn học",
-    "Kinh tế",
-    "Tâm lý",
-    "Khoa học",
-    "Lịch sử",
-    "Nghệ thuật",
-    "Thiếu nhi",
-  ];
+  // const genres = [
+  //   "Công nghệ",
+  //   "Văn học",
+  //   "Kinh tế",
+  //   "Tâm lý",
+  //   "Khoa học",
+  //   "Lịch sử",
+  //   "Nghệ thuật",
+  //   "Thiếu nhi",
+  // ];
+
+  useEffect(() => {
+    // Fetch genres from API or use static data
+    const fetchGenres = async () => {
+      try {
+        const data = await getGenres();
+        setGenres(data);
+      } catch (error) {
+        console.error("Error fetching genres:", error);
+      }
+    };
+
+    fetchGenres();
+  }, []);
 
   const handleBack = () => {
     navigate(-1);
   };
+
 
   const handleCoverImageUpload = (file) => {
     const isImage = file.type.startsWith("image/");
@@ -75,6 +93,9 @@ const AdminAddbook = () => {
     return false;
   };
 
+
+  console.log("form data: ", form.getFieldsValue());
+  
   const handleRemoveBookFile = () => {
     setBookFile(null);
   };
@@ -93,7 +114,15 @@ const AdminAddbook = () => {
     form.setFieldsValue({ genre: newGenres });
   };
 
-  const handleSubmit = (values) => {
+  const handleSubmit = async (values) => {
+    try{
+      const result = await uploadBook(form);
+      console.log("Upload result:", result);
+    } catch (error){
+      message.error("Lưu sách thất bại!");
+      console.error("Error uploading book:", error);
+      return;
+    }
     console.log("Form values:", values);
     console.log("Cover image:", coverImage);
     console.log("Book file:", bookFile);
@@ -156,7 +185,7 @@ const AdminAddbook = () => {
 
                 {/* Author */}
                 <Form.Item
-                  name="author"
+                  name="authorNames"
                   label={
                     <span className="text-gray-700 font-medium">Tác giả</span>
                   }
@@ -192,7 +221,7 @@ const AdminAddbook = () => {
 
                 {/* Publication Year */}
                 <Form.Item
-                  name="year"
+                  name="publicationYear"
                   label={
                     <span className="text-gray-700 font-medium">
                       Năm xuất bản
@@ -312,6 +341,7 @@ const AdminAddbook = () => {
                     <Option value="pdf">pdf</Option>
                     <Option value="docx">docx</Option>
                     <Option value="doc">doc</Option>
+                    <Option value="epub">epub</Option>
                   </Select>
                 </Form.Item>
                 {bookFile && (

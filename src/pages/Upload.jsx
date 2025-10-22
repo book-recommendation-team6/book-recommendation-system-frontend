@@ -1,53 +1,34 @@
-import React, { useState } from "react";
-import axios from "axios";
+import { useState } from "react";
+import { axiosClient } from "../utils/axiousClient";
 
-function Upload(props) {
+export default function UploadDirect() {
   const [file, setFile] = useState(null);
-  const [message, setMessage] = useState("");
+  const [msg, setMsg] = useState("");
 
-  const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
-  };
+  const onChoose = (e) => setFile(e.target.files?.[0] || null);
 
-  const handleUpload = async () => {
-    if (!file) {
-      setMessage("Vui lòng chọn file PDF");
-      return;
-    }
+  const send = async () => {
+    if (!file) return setMsg("Chọn file PDF trước đã");
+    if (file.type !== "application/pdf") return setMsg("Chỉ nhận PDF");
 
-    if (file.type !== "application/pdf") {
-      setMessage("Chỉ hỗ trợ file PDF");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
+    const fd = new FormData();
+    fd.append("file", file);
 
     try {
-      const response = await axios.post(
-        "http://localhost:8080/upload",
-        formData,
-        {
-            withCredentials: true, // QUAN TRỌNG: để cookie httpOnly gửi kèm
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      setMessage(`Upload thành công: ${response.data}`);
-    } catch (error) {
-      setMessage(`Lỗi: ${error.message}`);
+      const { data } = await axiosClient.post("/api/v1/upload", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setMsg(`OK: ${data.key}`);
+    } catch (e) {
+      setMsg(e?.response?.data?.error || e.message);
     }
   };
 
   return (
     <div>
-      <h1>Upload PDF to MinIO via Java Server</h1>
-      <input type="file" accept="application/pdf" onChange={handleFileChange} />
-      <button onClick={handleUpload}>Upload</button>
-      <p>{message}</p>
+      <input type="file" accept="application/pdf" onChange={onChoose} />
+      <button onClick={send}>Upload</button>
+      <p>{msg}</p>
     </div>
   );
 }
-
-export default Upload;
