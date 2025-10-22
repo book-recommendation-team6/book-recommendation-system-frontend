@@ -6,9 +6,10 @@ import {
   DeleteOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
-import { Camera, File} from "lucide-react";
+import { Camera, File } from "lucide-react";
 import AdminLayout from "../../layout/AdminLayout";
 import { PATHS } from "../../constant/routePath";
+import { getBookDetail, getGenres, updateBook } from "../../services/manageBookService";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -17,64 +18,58 @@ const AdminEditbook = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [form] = Form.useForm();
-  const [coverImage, setCoverImage] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
+  const [initialCoverUrl, setInitialCoverUrl] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
   const [bookFile, setBookFile] = useState(null);
-  const [selectedGenres, setSelectedGenres] = useState([]);
+  const [existingFormats, setExistingFormats] = useState([]);
+  const [genreOptions, setGenreOptions] = useState([]);
+  const [genresLoading, setGenresLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const genres = [
-    "Công nghệ",
-    "Văn học",
-    "Kinh tế",
-    "Tâm lý",
-    "Khoa học",
-    "Lịch sử",
-    "Nghệ thuật",
-    "Thiếu nhi",
-  ];
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Load book data from API
     const loadBookData = async () => {
+      setLoading(true);
+      setGenresLoading(true);
       try {
-        // TODO: Replace with actual API call
-        // const response = await fetch(`/api/books/${id}`);
-        // const bookData = await response.json();
-        
-        // Mock data for now
-        const mockBookData = {
-          id: id,
-          title: "Clean code",
-          author: "Robert C. Martin",
-          publisher: "NXB Dân Trí",
-          year: 2022,
-          genre: ["Công nghệ"],
-          description: "Clean code (mã sạch) là cách viết mã nguồn rõ ràng, dễ đọc, dễ hiểu và dễ bảo trì...",
-          format: "pdf",
-          coverImage: null, // URL to cover image
-          bookFile: null, // File object or URL
-        };
+        const [genres, book] = await Promise.all([
+          getGenres().catch((error) => {
+            message.error("Không thể tải danh sách thể loại!");
+            console.error("Error loading genres:", error);
+            return [];
+          }),
+          getBookDetail(id),
+        ]);
 
-        // Populate form
-        form.setFieldsValue({
-          title: mockBookData.title,
-          author: mockBookData.author,
-          publisher: mockBookData.publisher,
-          year: mockBookData.year,
-          genre: mockBookData.genre,
-          description: mockBookData.description,
-          format: mockBookData.format,
-        });
+        setGenreOptions(genres);
 
-        setSelectedGenres(mockBookData.genre);
-        if (mockBookData.coverImage) {
-          setCoverImage(mockBookData.coverImage);
+        if (book) {
+          const authorNames = book.authors
+            ? Array.from(book.authors).map((author) => author.name)
+            : [];
+          const genreIds = book.genres
+            ? Array.from(book.genres).map((genre) => genre.id)
+            : [];
+
+          form.setFieldsValue({
+            title: book.title,
+            author: authorNames.join(", "),
+            publisher: book.publisher,
+            publicationYear: book.publicationYear,
+            genres: genreIds,
+            description: book.description,
+          });
+
+          setExistingFormats(book.formats ?? []);
+          setInitialCoverUrl(book.coverImageUrl || null);
+          setCoverPreview(book.coverImageUrl || null);
         }
-        
-        setLoading(false);
       } catch (error) {
         message.error("Không thể tải thông tin sách!");
         console.error("Error loading book:", error);
+      } finally {
+        setGenresLoading(false);
         setLoading(false);
       }
     };
@@ -100,9 +95,10 @@ const AdminEditbook = () => {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      setCoverImage(e.target.result);
+      setCoverPreview(e.target.result);
     };
     reader.readAsDataURL(file);
+    setCoverFile(file);
     return false;
   };
 
@@ -131,26 +127,61 @@ const AdminEditbook = () => {
   };
 
   const handleRemoveCoverImage = () => {
-    setCoverImage(null);
+    setCoverFile(null);
+    setCoverPreview(initialCoverUrl);
   };
 
-  const handleGenreChange = (value) => {
-    setSelectedGenres(value);
-  };
+  const handleSubmit = async (values) => {
+    const authorNames = values.author
+      ?.split(",")
+      .map((name) => name.trim())
+      .filter(Boolean);
 
-  const handleRemoveGenre = (genreToRemove) => {
-    const newGenres = selectedGenres.filter((genre) => genre !== genreToRemove);
-    setSelectedGenres(newGenres);
-    form.setFieldsValue({ genre: newGenres });
-  };
+    if (!authorNames?.length) {
+      message.error("Vui lòng nhập ít nhất một tác giả!");
+      return;
+    }
 
-  const handleSubmit = (values) => {
-    console.log("Update book values:", values);
-    console.log("Cover image:", coverImage);
-    console.log("Book file:", bookFile);
-    message.success("Cập nhật sách thành công!");
-    // TODO: Add API call to update book
-    // navigate(PATHS.ADMIN.BOOKS);
+    if (!values.genres?.length) {
+      message.error("Vui lòng chọn thể loại!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", values.title.trim());
+    formData.append("description", values.description.trim());
+
+    if (values.publicationYear) {
+      formData.append("publicationYear", values.publicationYear);
+    }
+
+    if (values.publisher) {
+      formData.append("publisher", values.publisher.trim());
+    }
+
+    authorNames.forEach((name) => formData.append("authorNames", name));
+    values.genres.forEach((genreId) => formData.append("genreIds", genreId));
+
+    if (coverFile) {
+      formData.append("cover", coverFile);
+    }
+
+    if (bookFile) {
+      formData.append("file", bookFile);
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await updateBook(id, formData);
+      message.success(response.message || "Cập nhật sách thành công!");
+      navigate(PATHS.ADMIN.BOOKS);
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Không thể cập nhật sách, vui lòng thử lại!",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -253,7 +284,7 @@ const AdminEditbook = () => {
 
                 {/* Publication Year */}
                 <Form.Item
-                  name="year"
+                  name="publicationYear"
                   label={
                     <span className="text-gray-700 font-medium">
                       Năm xuất bản
@@ -275,7 +306,7 @@ const AdminEditbook = () => {
 
               {/* Genre */}
               <Form.Item
-                name="genre"
+                name="genres"
                 label={
                   <span className="text-gray-700 font-medium">Thể loại</span>
                 }
@@ -287,8 +318,7 @@ const AdminEditbook = () => {
                   placeholder="Chọn thể loại"
                   className="rounded-lg"
                   size="large"
-                  onChange={handleGenreChange}
-                  value={selectedGenres}
+                  loading={genresLoading}
                   tagRender={(props) => {
                     const { label, closable, onClose } = props;
                     return (
@@ -304,9 +334,9 @@ const AdminEditbook = () => {
                     );
                   }}
                 >
-                  {genres.map((genre) => (
-                    <Option key={genre} value={genre}>
-                      {genre}
+                  {genreOptions.map((genre) => (
+                    <Option key={genre.id} value={genre.id}>
+                      {genre.name}
                     </Option>
                   ))}
                 </Select>
@@ -358,22 +388,6 @@ const AdminEditbook = () => {
                   </ConfigProvider>
                 </div>
 
-                {/* Format */}
-                <Form.Item
-                  name="format"
-                  label={
-                    <span className="text-gray-700 font-medium">Định dạng</span>
-                  }
-                  rules={[
-                    { required: true, message: "Vui lòng chọn định dạng" },
-                  ]}
-                >
-                  <Select placeholder="pdf" className="rounded-lg" size="large">
-                    <Option value="pdf">pdf</Option>
-                    <Option value="docx">docx</Option>
-                    <Option value="doc">doc</Option>
-                  </Select>
-                </Form.Item>
                 {bookFile && (
                   <div className="mt-6 flex items-center justify-between bg-blue-50 p-3 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -386,6 +400,23 @@ const AdminEditbook = () => {
                       icon={<DeleteOutlined />}
                       onClick={handleRemoveBookFile}
                     />
+                  </div>
+                )}
+                {!bookFile && existingFormats.length > 0 && (
+                  <div className="mt-6 bg-gray-50 p-3 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-600 text-2xl"><File /></span>
+                      <div>
+                        <p className="text-gray-700 font-medium">
+                          {existingFormats[0]?.typeName || "Định dạng hiện có"}
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          {existingFormats[0]?.fileSizeKb
+                            ? `${existingFormats[0].fileSizeKb} KB`
+                            : "File đã được tải lên"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -402,6 +433,7 @@ const AdminEditbook = () => {
                   htmlType="submit"
                   size="large"
                   className="bg-teal-500 hover:bg-teal-600 border-none rounded-lg px-12 py-2 h-auto text-base font-medium"
+                  loading={submitting}
                 >
                   Cập nhật sách
                 </Button>
@@ -419,10 +451,10 @@ const AdminEditbook = () => {
                   showUploadList={false}
                   className="rounded-lg"
                 >
-                  {coverImage ? (
+                  {coverPreview ? (
                     <div className="relative">
                       <img
-                        src={coverImage || "/placeholder.svg"}
+                        src={coverPreview || "/placeholder.svg"}
                         alt="Cover preview"
                         className="w-full h-80 object-cover rounded-lg"
                       />
