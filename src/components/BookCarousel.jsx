@@ -16,6 +16,8 @@ const BookCarousel = ({ books, title }) => {
     }
   };
 
+  console.log("book : ", books);
+
   return (
     <div className="mb-12">
         <SectionHeader title={title} subtitle={true} />

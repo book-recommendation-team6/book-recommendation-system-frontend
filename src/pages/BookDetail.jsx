@@ -1,9 +1,10 @@
-import React, { useMemo, useCallback, Suspense } from 'react';
+import React, { useMemo, useCallback, Suspense, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Thêm import này
 import MainLayout from '../layout/MainLayout';
 import { Breadcrumb } from 'antd';
 import scrollToTop from '../utils/scrollToTop';
 import {Link} from "react-router-dom";
+import { getBooks } from '../services/manageBookService';
 // // Import all the new components
 const BookCover = React.lazy(() => import('../components/book-detail/BookCover'));
 const BookInfo = React.lazy(() => import('../components/book-detail/BookInfo'));
@@ -41,7 +42,22 @@ class ErrorBoundary extends React.Component {
 const BookDetail = () => {
   // Thêm hook useNavigate
   const navigate = useNavigate();
-  
+
+  const [relatedBooks, setRelatedBooks] = React.useState([]);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const response = await getBooks(0, 10);
+        console.log("Fetched books for book detail page:", response);
+        setRelatedBooks(response.data?.content || response.content || []);
+      } catch (error) {
+        console.error("Failed to fetch books for book detail page:", error);
+      }
+    };
+    fetchBooks();
+  }, []);
+
   scrollToTop();
   // Mock data - would come from API/props in real app
   const book = useMemo(() => ({
@@ -81,43 +97,6 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
     ],
   }), []);
 
-  const relatedBooks = useMemo(() => [
-    {
-      id: 1,
-      title: 'Tết ở Làng Địa Ngục',
-      author: 'Thảo Trang',
-      cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
-      category: 'recommended',
-    },
-    {
-      id: 2,
-      title: 'Chiến Tranh và Hòa Bình',
-      author: 'Lev Tolstoy',
-      cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
-      category: 'recommended',
-    },
-    {
-      id: 3,
-      title: 'Đất Rừng Phương Nam',
-      author: 'Đoàn Giỏi',
-      cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
-      category: 'recommended',
-    },
-    {
-      id: 4,
-      title: 'Số Đỏ',
-      author: 'Vũ Trọng Phụng',
-      cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
-      category: 'recommended',
-    },
-    {
-      id: 5,
-      title: 'Lão Hạc',
-      author: 'Nam Cao',
-      cover: 'https://tiemsach.org/wp-content/uploads/2023/09/Tet-o-lang-dia-nguc.jpg',
-      category: 'recommended',
-    },
-  ], []);
 
   // Event handlers
   const handleRead = useCallback(() => {
