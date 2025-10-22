@@ -8,18 +8,21 @@ import SidePanel from "./SidePanel";
 import { AnimatePresence } from "framer-motion";
 import useTheme from "../../hook/useTheme"; 
 
+import { useLocation } from "react-router-dom";
+
 const LS_POS_KEY = "reader:cfi";
 const LS_BM_KEY = "reader:bookmarks";
 
 
 
 export default function EpubCoreViewer({
-  src = "https://tiemsach.org/ebook/Lich Su Van Vat - Bill Bryson.epub",
   onBack,
 }) {
 
   const [theme, setTheme] = useTheme();
 
+  const {src} = {src: "http://localhost:9000/book-files/books/2025/10/22/sach_noi_epub_5fca61c0.epub?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=admin%2F20251022%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20251022T183026Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=9bb260d821db19ea9e322a90bba4fb6df04c581a316dbb36e6ac6f3d15be72e5"};
+  console.log("BookReader src:", src);
   const resolveTheme = () => {
     if (theme === 'dark') return 'dark';
     if (theme === 'light') return 'light';

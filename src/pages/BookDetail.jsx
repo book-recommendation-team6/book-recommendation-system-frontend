@@ -1,4 +1,4 @@
-import React, { useMemo, Suspense, useEffect } from 'react';
+import React, { useMemo, Suspense, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom'; // Thêm import này
 import MainLayout from '../layout/MainLayout';
 import { Breadcrumb } from 'antd';
@@ -48,7 +48,7 @@ const BookDetail = () => {
   scrollToTop();
 
   const navigate = useNavigate();
-  
+
   //Get book ID from URL params
   const { id } = useParams();
 
@@ -57,6 +57,7 @@ const BookDetail = () => {
   const [relatedBooks, setRelatedBooks] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
+  console.log("book data:", bookData);
   // Fetch book detail by ID
   useEffect(() => {
     const fetchBookDetail = async () => {
@@ -115,11 +116,11 @@ const BookDetail = () => {
 
 
   // // Event handlers
-  // const handleRead = useCallback(() => {
-  //   console.log('Start reading:', book.title);
-  //   // Navigate to reader page with book ID
-  //   navigate(`/reader/${book.id}`);
-  // }, [book.title, book.id, navigate]);
+  const handleRead = () => {
+    // console.log('Start reading:', book.title);
+    // Navigate to reader page with book ID
+    navigate(`/reader`, { state: { src: bookData.formats[1].contentUrl } });
+  }
 
   // const handleFavorite = useCallback(() => {
   //   console.log('Add to favorites:', book.title);
@@ -173,7 +174,7 @@ const BookDetail = () => {
                     <BookCover src={book.cover} alt={book.title} />
                     <BookInfo
                       book={book}
-                      // onRead={handleRead}
+                      onRead={handleRead}
                       // onFavorite={handleFavorite}
                       // onDownload={handleDownload}
                     />
