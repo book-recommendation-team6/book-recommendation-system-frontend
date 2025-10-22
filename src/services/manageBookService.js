@@ -25,17 +25,6 @@ export const getBookDetail = async (bookId) => {
   }
 };
 
-export const getGenres = async () => {
-  try {
-    const response = await api.get("/books/genres");
-    console.log("Get genres response:", response.data);
-    return response.data?.content;
-  } catch (error) {
-    console.error("Get genres failed:", error.response?.data || error.message);
-    throw error;
-  }
-};
-
 export const createBook = async (payload) => {
   try {
     const response = await api.post("/admin/books/create", payload, {

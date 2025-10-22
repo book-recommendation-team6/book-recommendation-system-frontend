@@ -1,9 +1,10 @@
-import React from 'react';
-import Hero from '../components/Hero';
-import BookCarousel from '../components/BookCarousel';
-
-import books from '../data/book';
-import MainLayout from '../layout/MainLayout';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Hero from "../components/Hero";
+import BookCarousel from "../components/BookCarousel";
+import { getGenres } from "../services/genreService";
+import books from "../data/book";
+import MainLayout from "../layout/MainLayout";
 
 const Home = () => {
   const recommendedBooks = books.filter(b => b.category === 'recommended');

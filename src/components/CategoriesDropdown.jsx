@@ -1,15 +1,49 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import categories from '../data/categories';
-
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getGenres } from "../services/genreService";
 
 const CategoryDropdown = () => {
   const navigate = useNavigate();
+  const [genres, setGenres] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCategoryClick = (category) => {
     // Navigate to category page with category ID and name
-    navigate(`/category/${category.id}?name=${encodeURIComponent(category.name)}`);
+    navigate(
+      `/category/${category.id}?name=${encodeURIComponent(category.name)}`,
+    );
   };
+
+  useEffect(() => {
+    const fetchGenres = async () => {
+      setIsLoading(true);
+      try {
+        const { genres } = await getGenres({ size: 100 });
+        setGenres(genres);
+      } catch (error) {
+        console.error("Không thể tải danh sách thể loại:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGenres();
+  }, []);
+
+  const columns = useMemo(() => {
+    if (!genres.length) {
+      return [];
+    }
+
+    const columnCount = 3;
+    const result = Array.from({ length: columnCount }, () => []);
+
+    genres.forEach((genre, index) => {
+      result[index % columnCount].push(genre);
+    });
+
+    return result;
+  }, [genres]);
 
   return (
     <div className="absolute pointer-events-none group-hover:pointer-events-auto top-full left-0 mt-0 pt-2 bg-transparent z-50 min-w-96">
@@ -19,26 +53,33 @@ const CategoryDropdown = () => {
         </div>
         
         <div className="py-4 px-4">
-          <div className="grid grid-cols-3 gap-8">
-            {categories.columns.map((column, columnIndex) => (
-              <div key={columnIndex} className="space-y-2">
-                {column.title && (
-                  <div className="pb-2">
-                    <a className="text-sm font-medium text-white ">{column.title}</a>
+          {isLoading ? (
+            <div className="px-2 py-6 text-center text-sm text-gray-400">
+              Đang tải thể loại...
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-8">
+              {columns.length ? (
+                columns.map((column, columnIndex) => (
+                  <div key={columnIndex} className="space-y-2">
+                    {column.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleCategoryClick(item)}
+                        className="w-full text-left py-1 transition-colors text-sm text-gray-300 hover:text-blue-300"
+                      >
+                        {item.name}
+                      </button>
+                    ))}
                   </div>
-                )}
-                {column.items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleCategoryClick(item)}
-                    className="w-full text-left py-1 transition-colors text-sm text-gray-300 hover:text-blue-300"
-                  >
-                    {item.name}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
+                ))
+              ) : (
+                <div className="col-span-3 text-center text-sm text-gray-400">
+                  Chưa có thể loại nào để hiển thị.
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         <div className="px-4 pt-2 border-t border-gray-700">

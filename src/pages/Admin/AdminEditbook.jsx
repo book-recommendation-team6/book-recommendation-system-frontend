@@ -9,7 +9,8 @@ import {
 import { Camera, File } from "lucide-react";
 import AdminLayout from "../../layout/AdminLayout";
 import { PATHS } from "../../constant/routePath";
-import { getBookDetail, getGenres, updateBook } from "../../services/manageBookService";
+import { getBookDetail, updateBook } from "../../services/manageBookService";
+import { getGenres } from "../../services/genreService";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -33,11 +34,11 @@ const AdminEditbook = () => {
       setLoading(true);
       setGenresLoading(true);
       try {
-        const [genres, book] = await Promise.all([
-          getGenres().catch((error) => {
+        const [{ genres }, book] = await Promise.all([
+          getGenres({ size: 100 }).catch((error) => {
             message.error("Không thể tải danh sách thể loại!");
             console.error("Error loading genres:", error);
-            return [];
+            return { genres: [] };
           }),
           getBookDetail(id),
         ]);

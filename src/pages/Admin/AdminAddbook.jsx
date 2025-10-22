@@ -9,7 +9,8 @@ import {
 import { Camera, File} from "lucide-react";
 import AdminLayout from "../../layout/AdminLayout";
 import { PATHS } from "../../constant/routePath";
-import { createBook, getGenres } from "../../services/manageBookService";
+import { createBook } from "../../services/manageBookService";
+import { getGenres } from "../../services/genreService";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -28,8 +29,8 @@ const AdminAddbook = () => {
     const fetchGenres = async () => {
       setGenresLoading(true);
       try {
-        const response = await getGenres();
-        setGenreOptions(response);
+        const { genres } = await getGenres({ size: 100 });
+        setGenreOptions(genres);
       } catch (error) {
         message.error("Không thể tải danh sách thể loại!");
       } finally {
