@@ -2,7 +2,7 @@ import api from "../config/ApiConfig.js";
 
 export const getBooks = async () => {
   try {
-    const response = await api.get("/admin/books");
+    const response = await api.get("/books");
     console.log("Get books response:", response);
     return response.data?.content ?? [];
   } catch (error) {
@@ -13,7 +13,7 @@ export const getBooks = async () => {
 
 export const getBookDetail = async (bookId) => {
   try {
-    const response = await api.get(`/admin/books/${bookId}`);
+    const response = await api.get(`/books/${bookId}`);
     console.log("Get book detail response:", response);
     return response.data;
   } catch (error) {

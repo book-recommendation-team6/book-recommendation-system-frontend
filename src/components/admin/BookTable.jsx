@@ -16,8 +16,8 @@ const columns = [
   },
   {
     title: "Thể loại",
-    dataIndex: "genre",
-    key: "genre",
+    dataIndex: "genres",
+    key: "genres",
   },
   {
     title: "Nhà xuất bản",
@@ -26,9 +26,9 @@ const columns = [
   },
   {
     title: "Ngày tải lên",
-    dataIndex: "uploadDate",
-    key: "uploadDate",
-    render: (text) => <span className="text-teal-500 font-medium">{text}</span>,
+    dataIndex: "createdAt",
+    key: "createdAt",
+    render: (text) => <span className="text-teal-500 font-medium">{new Date(text).toLocaleDateString()}</span>,
   },
   {
     title: "Hành động",
@@ -81,6 +81,8 @@ const BookTable = ({ books, onEdit, onDelete }) => {
   const dataSource = books.map((book) => ({
     ...book,
     key: book.id,
+    author: book.authors?.map(a => a.name).join(", ") || "-",   // dùng đúng field "authors"
+    genres: book.genres?.map(g => g.name).join(", ") || "-",
     onEdit,
     onDelete,
   }))

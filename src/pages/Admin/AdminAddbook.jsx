@@ -113,7 +113,7 @@ const AdminAddbook = () => {
       ?.split(",")
       .map((name) => name.trim())
       .filter(Boolean);
-
+    console.log("Author names:", authorNames);
     if (!authorNames?.length) {
       message.error("Vui lòng nhập ít nhất một tác giả!");
       return;
@@ -219,7 +219,7 @@ const AdminAddbook = () => {
 
                 {/* Author */}
                 <Form.Item
-                  name="authorNames"
+                  name="author"
                   label={
                     <span className="text-gray-700 font-medium">Tác giả</span>
                   }

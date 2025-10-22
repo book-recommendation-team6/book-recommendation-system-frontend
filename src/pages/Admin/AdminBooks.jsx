@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect} from "react"
 import { useNavigate } from "react-router-dom"
 import AdminLayout from "../../layout/AdminLayout"
 import SearchBar from "../../components/admin/SearchBar"
@@ -7,21 +7,36 @@ import BookTable from "../../components/admin/BookTable"
 import { Button, Modal, message } from "antd"
 import { Plus } from "lucide-react"
 import { PATHS } from "../../constant/routePath"
+import {getBooks} from "../../services/manageBookService"
 
-const mockBooks = Array.from({ length: 10 }, (_, i) => ({
-  id: i + 1,
-  title: "We Are Voulhire",
-  author: "Matthew Tysz",
-  genre: "Romance",
-  publisher: "ABCXYZ",
-  uploadDate: "29/10/2025",
-}))
+// const mockBooks = Array.from({ length: 10 }, (_, i) => ({
+//   id: i + 1,
+//   title: "We Are Voulhire",
+//   author: "Matthew Tysz",
+//   genre: "Romance",
+//   publisher: "ABCXYZ",
+//   uploadDate: "29/10/2025",
+// }))
 
 const AdminBooks = () => {
   const navigate = useNavigate()
+  const [bookData, setBookData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("")
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [bookToDelete, setBookToDelete] = useState(null)
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const books =  await getBooks();
+        console.log("Fetched books:", books);
+        setBookData(books);
+      } catch (error) {
+        console.error("Error fetching books:", error);
+      }
+    };
+    fetchBooks();
+  }, []);
 
   const handleSearch = (query) => {
     setSearchQuery(query)
@@ -76,7 +91,7 @@ const AdminBooks = () => {
           </Button>
         </div>
 
-        <BookTable books={mockBooks} onEdit={handleEditBook} onDelete={handleDeleteBook} />
+        <BookTable books={bookData} onEdit={handleEditBook} onDelete={handleDeleteBook} />
       </div>
 
       <Modal
