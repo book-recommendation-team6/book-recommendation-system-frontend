@@ -8,7 +8,7 @@ const BookMetadata = React.memo(({ metadata }) => {
     { label: 'Tác giả', value: author },
     { label: 'Thể loại', value: genre },
     { label: 'Nhà xuất bản', value: publisher },
-    { label: 'Ngày phát hành', value: publishDate },
+    { label: 'Năm phát hành', value: publishDate },
   ];
 
   return (

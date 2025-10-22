@@ -32,7 +32,7 @@ const UserRoute = ({ children }) => {
   }
 
   // Allow access for non-authenticated users or regular users
-  console.log("✅ UserRoute - Allowing access");
+  // console.log("✅ UserRoute - Allowing access");
   return children;
 };
 

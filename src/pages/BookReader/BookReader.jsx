@@ -171,6 +171,7 @@ export default function EpubCoreViewer({
       } catch (e) {
         setError("Không tải được sách. Vui lòng kiểm tra đường dẫn hoặc CORS.");
         setIsLoading(false);
+        console.error("Epub init error:", e);
       }
     })();
 
