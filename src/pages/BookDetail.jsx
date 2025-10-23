@@ -1,9 +1,12 @@
-import React, { useMemo, useCallback, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom'; // Thêm import này
+import React, { useMemo, useCallback, Suspense, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MainLayout from '../layout/MainLayout';
 import { Breadcrumb } from 'antd';
 import scrollToTop from '../utils/scrollToTop';
 import {Link} from "react-router-dom";
+import useAuth from '../hook/useAuth';
+import { useMessage } from '../contexts/MessageProvider';
+import { getBookFavorites, addFavorite, removeFavorite } from '../services/bookFavorite';
 // // Import all the new components
 const BookCover = React.lazy(() => import('../components/book-detail/BookCover'));
 const BookInfo = React.lazy(() => import('../components/book-detail/BookInfo'));
@@ -39,8 +42,12 @@ class ErrorBoundary extends React.Component {
 }
 
 const BookDetail = () => {
-  // Thêm hook useNavigate
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const message = useMessage();
+  
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [loadingFavorite, setLoadingFavorite] = useState(false);
   
   scrollToTop();
   // Mock data - would come from API/props in real app
@@ -119,6 +126,25 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
     },
   ], []);
 
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (isAuthenticated && user?.id) {
+        try {
+          const favorites = await getBookFavorites(user.id);
+          // Check if current book is in favorites list
+          const isFav = favorites.some(fav => 
+            (fav.bookId === parseInt(book.id)) || (fav.book?.id === parseInt(book.id))
+          );
+          setIsFavorited(isFav);
+        } catch (error) {
+          console.error('Failed to check favorite status:', error);
+        }
+      }
+    };
+    
+    checkFavoriteStatus();
+  }, [isAuthenticated, user?.id, book.id]);
+
   // Event handlers
   const handleRead = useCallback(() => {
     console.log('Start reading:', book.title);
@@ -126,10 +152,36 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
     navigate(`/reader/${book.id}`);
   }, [book.title, book.id, navigate]);
 
-  const handleFavorite = useCallback(() => {
-    console.log('Add to favorites:', book.title);
-    // Add to favorites logic
-  }, [book.title]);
+  const handleFavorite = useCallback(async () => {
+    // Check if user is logged in
+    if (!isAuthenticated) {
+      message.warning('Vui lòng đăng nhập để sử dụng tính năng này');
+      return;
+    }
+
+    // Prevent double click
+    if (loadingFavorite) return;
+    
+    setLoadingFavorite(true);
+    try {
+      if (isFavorited) {
+        // Remove from favorites
+        await removeFavorite(user.id, book.id);
+        setIsFavorited(false);
+        message.success('Đã xóa khỏi yêu thích');
+      } else {
+        // Add to favorites
+        await addFavorite(user.id, book.id);
+        setIsFavorited(true);
+        message.success('Đã thêm vào yêu thích');
+      }
+    } catch (error) {
+      console.error('Favorite action failed:', error);
+      message.error('Có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setLoadingFavorite(false);
+    }
+  }, [book.id, isFavorited, isAuthenticated, user?.id, loadingFavorite, message]);
 
   const handleDownload = useCallback(() => {
     console.log('Download book:', book.title);
@@ -164,6 +216,8 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
                     onRead={handleRead}
                     onFavorite={handleFavorite}
                     onDownload={handleDownload}
+                    isFavorited={isFavorited}
+                    loadingFavorite={loadingFavorite}
                   />
                 </Suspense>
               </div>
