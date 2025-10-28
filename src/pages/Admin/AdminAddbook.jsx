@@ -20,7 +20,8 @@ const AdminAddbook = () => {
   const [form] = Form.useForm();
   const [coverPreview, setCoverPreview] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
-  const [bookFile, setBookFile] = useState(null);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [epubFile, setEpubFile] = useState(null);
   const [genreOptions, setGenreOptions] = useState([]);
   const [genresLoading, setGenresLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +34,7 @@ const AdminAddbook = () => {
         setGenreOptions(genres);
       } catch (error) {
         message.error("Không thể tải danh sách thể loại!");
-        console.logo("[ADMIN ADD_BOOK] Lỗi tải thể loại:", error);
+        console.error("[ADMIN ADD_BOOK] Lỗi tải thể loại:", error);
       } finally {
         setGenresLoading(false);
       }
@@ -68,14 +69,10 @@ const AdminAddbook = () => {
     return false;
   };
 
-  const handleBookFileUpload = (file) => {
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
-    if (!allowedTypes.includes(file.type)) {
-      message.error("Chỉ được tải lên file pdf, doc, docx!");
+  const handlePdfUpload = (file) => {
+    const isPdf = file.type === "application/pdf" || file.name?.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      message.error("Chỉ được tải lên file PDF!");
       return false;
     }
     const isLt25M = file.size / 1024 / 1024 < 25;
@@ -83,16 +80,34 @@ const AdminAddbook = () => {
       message.error("File phải nhỏ hơn 25MB!");
       return false;
     }
-
-    setBookFile(file);
+    setPdfFile(file);
     return false;
   };
 
+  const handleEpubUpload = (file) => {
+    const isEpub =
+      file.type === "application/epub+zip" ||
+      file.type === "application/octet-stream" ||
+      file.name?.toLowerCase().endsWith(".epub");
+    if (!isEpub) {
+      message.error("Chỉ được tải lên file EPUB!");
+      return false;
+    }
+    const isLt25M = file.size / 1024 / 1024 < 25;
+    if (!isLt25M) {
+      message.error("File phải nhỏ hơn 25MB!");
+      return false;
+    }
+    setEpubFile(file);
+    return false;
+  };
 
-  console.log("form data: ", form.getFieldsValue());
-  
-  const handleRemoveBookFile = () => {
-    setBookFile(null);
+  const handleRemovePdfFile = () => {
+    setPdfFile(null);
+  };
+
+  const handleRemoveEpubFile = () => {
+    setEpubFile(null);
   };
 
   const handleRemoveCoverImage = () => {
@@ -106,8 +121,8 @@ const AdminAddbook = () => {
       return;
     }
 
-    if (!bookFile) {
-      message.error("Vui lòng tải tệp sách!");
+    if (!pdfFile || !epubFile) {
+      message.error("Vui lòng tải lên cả file PDF và EPUB!");
       return;
     }
 
@@ -147,7 +162,8 @@ const AdminAddbook = () => {
     });
 
     formData.append("cover", coverFile);
-    formData.append("file", bookFile);
+    formData.append("pdfFile", pdfFile);
+    formData.append("epubFile", epubFile);
 
     setSubmitting(true);
     try {
@@ -155,7 +171,8 @@ const AdminAddbook = () => {
       message.success(response.message || "Thêm sách thành công!");
       form.resetFields();
       handleRemoveCoverImage();
-      handleRemoveBookFile();
+      handleRemovePdfFile();
+      handleRemoveEpubFile();
       navigate(PATHS.ADMIN.BOOKS);
     } catch (error) {
       message.error(
@@ -331,58 +348,106 @@ const AdminAddbook = () => {
 
               {/* Book File Upload */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Tải sách lên
+                <div className="space-y-4">
+                  <label className="block text-gray-700 font-medium">
+                    Tải sách (PDF)
                   </label>
-                   <ConfigProvider
-                      theme={{
-                        components: {
-                          Upload: {
-                            // token cho Upload
-                            colorFillAlter: "#accee72b",    // nền nhẹ (drag area)
-                            controlOutline: "rgba(241, 163, 99, 0.25)", // focus ring
-                          },
+                  <ConfigProvider
+                    theme={{
+                      components: {
+                        Upload: {
+                          colorFillAlter: "#accee72b",
+                          controlOutline: "rgba(241, 163, 99, 0.25)",
                         },
-                      }}
-                    >
-                  <Upload.Dragger
-                    beforeUpload={handleBookFileUpload}
-                    showUploadList={false}
+                      },
+                    }}
                   >
-                    <div className="py-8">
-                      <p className="text-gray-600 mb-2">
-                        Kéo thả file hoặc chọn
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        Format: pdf, docx, doc & Max file size: 25 MB
-                      </p>
-                    </div>
-                  </Upload.Dragger>
+                    <Upload.Dragger
+                      beforeUpload={handlePdfUpload}
+                      showUploadList={false}
+                    >
+                      <div className="py-8">
+                        <p className="text-gray-600 mb-2">
+                          Kéo thả file hoặc chọn
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          Format: pdf &amp; Max file size: 25 MB
+                        </p>
+                      </div>
+                    </Upload.Dragger>
                   </ConfigProvider>
+
+                  {pdfFile && (
+                    <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600 text-2xl">
+                          <File />
+                        </span>
+                        <span className="text-gray-700">{pdfFile.name}</span>
+                      </div>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={handleRemovePdfFile}
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {bookFile && (
-                  <div className="mt-6 flex items-center justify-between bg-blue-50 p-3 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <span className="text-blue-600 text-2xl"><File /></span>
-                      <span className="text-gray-700">{bookFile.name}</span>
+                <div className="space-y-4">
+                  <label className="block text-gray-700 font-medium">
+                    Tải sách (EPUB)
+                  </label>
+                  <ConfigProvider
+                    theme={{
+                      components: {
+                        Upload: {
+                          colorFillAlter: "#accee72b",
+                          controlOutline: "rgba(241, 163, 99, 0.25)",
+                        },
+                      },
+                    }}
+                  >
+                    <Upload.Dragger
+                      beforeUpload={handleEpubUpload}
+                      showUploadList={false}
+                    >
+                      <div className="py-8">
+                        <p className="text-gray-600 mb-2">
+                          Kéo thả file hoặc chọn
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          Format: epub &amp; Max file size: 25 MB
+                        </p>
+                      </div>
+                    </Upload.Dragger>
+                  </ConfigProvider>
+
+                  {epubFile && (
+                    <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600 text-2xl">
+                          <File />
+                        </span>
+                        <span className="text-gray-700">{epubFile.name}</span>
+                      </div>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={handleRemoveEpubFile}
+                      />
                     </div>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={handleRemoveBookFile}
-                    />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
               <div className="lg:col-span-3 flex justify-end">
                 <Button
                   type="primary"
                   htmlType="submit"
                   size="large"
-                  className="bg-teal-500 hover:bg-teal-600 border-none rounded-lg px-12 py-2 h-auto text-base font-medium"
+                  className="mt-26 bg-teal-500 hover:bg-teal-600 border-none rounded-lg px-12 py-2 h-auto text-base font-medium"
                   loading={submitting}
                 >
                   Lưu sách

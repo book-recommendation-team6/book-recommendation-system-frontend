@@ -13,6 +13,30 @@ export const getBooks = async (page = 0, size = 10) => {
   }
 };
 
+export const getBooksByGenre = async (genreId, page = 0, size = 10) => {
+  try {
+    const response = await api.get(`/books/genre/${genreId}`, {
+      params: { page, size }
+    });
+    return response;
+  } catch (error) {
+    console.error("Get books by genre failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const searchBooks = async (keyword, page = 0, size = 10) => {
+  try {
+    const response = await api.get("/books/search", {
+      params: { keyword, page, size }
+    });
+    return response;
+  } catch (error) {
+    console.error("Search books failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
 export const getBookDetail = async (bookId) => {
   try {
     const response = await api.get(`/books/${bookId}`);

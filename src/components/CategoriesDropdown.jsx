@@ -2,16 +2,18 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getGenres } from "../services/genreService";
 
-const CategoryDropdown = () => {
+const CategoryDropdown = ({ onSelect }) => {
   const navigate = useNavigate();
   const [genres, setGenres] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCategoryClick = (category) => {
-    // Navigate to category page with category ID and name
-    navigate(
-      `/category/${category.id}?name=${encodeURIComponent(category.name)}`,
-    );
+    if (onSelect) {
+      onSelect(category);
+      return;
+    }
+
+    navigate(`/category/${category.id}?name=${encodeURIComponent(category.name)}`);
   };
 
   useEffect(() => {
@@ -59,6 +61,16 @@ const CategoryDropdown = () => {
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-8">
+              {onSelect && (
+                <div className="col-span-3 mb-2">
+                  <button
+                    onClick={() => onSelect(null)}
+                    className="w-full text-left py-1 transition-colors text-sm text-blue-300 hover:text-blue-200"
+                  >
+                    Tất cả sách
+                  </button>
+                </div>
+              )}
               {columns.length ? (
                 columns.map((column, columnIndex) => (
                   <div key={columnIndex} className="space-y-2">

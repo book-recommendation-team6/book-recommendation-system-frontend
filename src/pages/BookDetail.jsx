@@ -60,25 +60,6 @@ const BookDetail = () => {
   //Get book ID from URL params
   const { id } = useParams();
 
-  useEffect(() => {
-    const checkFavoriteStatus = async () => {
-      if (isAuthenticated && user?.id) {
-        try {
-          const favorites = await getBookFavorites(user.id);
-          // Check if current book is in favorites list
-          const isFav = favorites.some(fav => 
-            (fav.bookId === parseInt(book.id)) || (fav.book?.id === parseInt(book.id))
-          );
-          setIsFavorited(isFav);
-        } catch (error) {
-          console.error('Failed to check favorite status:', error);
-        }
-      }
-    };
-    
-    checkFavoriteStatus();
-  }, [isAuthenticated, user?.id, book.id]);
-
   // // Event handlers
   // const handleRead = useCallback(() => {
   //   console.log('Start reading:', book.title);
@@ -87,7 +68,6 @@ const BookDetail = () => {
   const [relatedBooks, setRelatedBooks] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
-  console.log("book data:", bookData);
   // Fetch book detail by ID
   useEffect(() => {
     const fetchBookDetail = async () => {
@@ -144,12 +124,52 @@ const BookDetail = () => {
     };
   }, [bookData]);
 
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!book?.id || !isAuthenticated || !user?.id) {
+        return;
+      }
+
+      try {
+        const favorites = await getBookFavorites(user.id);
+        const bookId = Number(book.id);
+        const isFav = favorites.some(
+          fav => fav.bookId === bookId || fav.book?.id === bookId
+        );
+        setIsFavorited(isFav);
+      } catch (error) {
+        console.error('Failed to check favorite status:', error);
+      }
+    };
+
+    checkFavoriteStatus();
+  }, [book?.id, isAuthenticated, user?.id]);
+
 
   // // Event handlers
+  const resolveFormatUrl = (preferredType) => {
+    const format = bookData?.formats?.find(
+      (item) => item.typeName?.toUpperCase() === preferredType,
+    );
+    if (!format) {
+      return undefined;
+    }
+    return format.downloadUrl || format.contentUrl;
+  };
+
   const handleRead = () => {
-    // console.log('Start reading:', book.title);
-    // Navigate to reader page with book ID
-    navigate(`/reader`, { state: { src: bookData.formats[1].contentUrl } });
+    const epubSrc = resolveFormatUrl("EPUB");
+    const pdfSrc = resolveFormatUrl("PDF");
+    const fallbackSrc =
+      bookData?.formats?.[0]?.downloadUrl || bookData?.formats?.[0]?.contentUrl;
+
+    const readerSrc = epubSrc || pdfSrc || fallbackSrc;
+    if (!readerSrc) {
+      message.warning('Không tìm thấy nội dung để đọc');
+      return;
+    }
+
+    navigate(`/reader`, { state: { src: readerSrc } });
   }
 
   const handleFavorite = useCallback(async () => {
@@ -162,16 +182,23 @@ const BookDetail = () => {
     // Prevent double click
     if (loadingFavorite) return;
     
+    if (!book?.id || !user?.id) {
+      message.error('Không thể cập nhật yêu thích cho sách này');
+      return;
+    }
+
+    const bookId = Number(book.id);
+
     setLoadingFavorite(true);
     try {
       if (isFavorited) {
         // Remove from favorites
-        await removeFavorite(user.id, book.id);
+        await removeFavorite(user.id, bookId);
         setIsFavorited(false);
         message.success('Đã xóa khỏi yêu thích');
       } else {
         // Add to favorites
-        await addFavorite(user.id, book.id);
+        await addFavorite(user.id, bookId);
         setIsFavorited(true);
         message.success('Đã thêm vào yêu thích');
       }
@@ -181,7 +208,7 @@ const BookDetail = () => {
     } finally {
       setLoadingFavorite(false);
     }
-  }, [book.id, isFavorited, isAuthenticated, user?.id, loadingFavorite, message]);
+  }, [book?.id, isFavorited, isAuthenticated, user?.id, loadingFavorite, message]);
   // const handleFavorite = useCallback(() => {
   //   console.log('Add to favorites:', book.title);
   //   // Add to favorites logic
@@ -210,23 +237,6 @@ const BookDetail = () => {
       <div className="min-h-screen">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="bg-white shadow-sm p-8 space-y-16">
-            {/* Main Book Detail */}
-            <ErrorBoundary>
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <Suspense fallback={<div className="text-center py-4">Loading...</div>}>
-                  <BookCover src={book.cover} alt={book.title} />
-                  <BookInfo
-                    book={book}
-                    onRead={handleRead}
-                    onFavorite={handleFavorite}
-                    onDownload={handleDownload}
-                    isFavorited={isFavorited}
-                    loadingFavorite={loadingFavorite}
-                  />
-                </Suspense>
-                </div>
-              </ErrorBoundary>
-              
             {/* Loading State */}
             {loading && (
               <div className="text-center py-12">
@@ -252,8 +262,9 @@ const BookDetail = () => {
                     <BookInfo
                       book={book}
                       onRead={handleRead}
-                      // onFavorite={handleFavorite}
-                      // onDownload={handleDownload}
+                      onFavorite={handleFavorite}
+                      isFavorited={isFavorited}
+                      loadingFavorite={loadingFavorite}
                     />
                   </Suspense>
                 </div>
