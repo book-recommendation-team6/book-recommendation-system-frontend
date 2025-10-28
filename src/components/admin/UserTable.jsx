@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ConfigProvider, Button, Table } from 'antd';
 
-const UserTable = ({ users, onLockUser }) => {
+const UserTable = ({ users, onLockUser, pagination, onTableChange, loading: tableLoading }) => {
   const columns = [
     { title: 'Họ và tên', dataIndex: 'username', render: (_, record) => record.username || record.name || '-' },
     { title: 'User id', dataIndex: 'id' },
@@ -73,7 +73,9 @@ const UserTable = ({ users, onLockUser }) => {
       <Table
         rowKey={(record) => record.id}
         rowSelection={rowSelection}
-        pagination={{ position: ["bottomCenter"], size: "large" }}
+        pagination={pagination}
+        onChange={onTableChange}
+        loading={tableLoading}
         columns={columns}
         dataSource={users}
         size="large"

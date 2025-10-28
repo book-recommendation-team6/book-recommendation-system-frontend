@@ -33,6 +33,7 @@ const AdminAddbook = () => {
         setGenreOptions(genres);
       } catch (error) {
         message.error("Không thể tải danh sách thể loại!");
+        console.logo("[ADMIN ADD_BOOK] Lỗi tải thể loại:", error);
       } finally {
         setGenresLoading(false);
       }

@@ -5,52 +5,58 @@ import UserTable from "../../components/admin/UserTable"
 import { Modal, message } from "antd"
 import { getUser } from "../../services/manageUserService"
 
-// Sample data - replace with actual API call
-const sampleUsers = Array(20)
-  .fill(null)
-  .map((_, index) => ({
-    key: index,
-    id: index + 1,
-    name: "Kristin Watson",
-    userId: "#12345",
-    email: "michelle.rivera@example.com",
-    createdDate: "25/9/2025",
-    status: "Đang hoạt động",
-    avatar: "/placeholder-user.jpg",
-  }))
-
 const AdminUsers = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [users, setUsers] = useState([])
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  })
+  const [loading, setLoading] = useState(false)
+
+  console.log("AdminUsers rendered. Current users:", users);
+  const fetchUsers = async (page = 0, size = 10) => {
+    setLoading(true)
+    try {
+      const response = await getUser(page, size);
+      console.log("Fetched users:", response);
+      
+      // Assuming backend returns { data: { content: [...], totalElements: N } }
+      const content = response.data?.content || response.content || [];
+      const total = response.data?.totalElements || response.totalElements || 0;
+      
+      setUsers(content);
+      setPagination(prev => ({
+        ...prev,
+        total,
+        current: page + 1, // AntD uses 1-based, backend uses 0-based
+      }));
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      message.error("Không thể tải danh sách người dùng");
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const data = await getUser();
-        setUsers(data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    }
-
-    fetchUsers();
+    fetchUsers(0, pagination.pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle table change (pagination, filters, sorter)
+  const handleTableChange = (paginationConfig) => {
+    const page = paginationConfig.current - 1; // Convert to 0-based
+    const size = paginationConfig.pageSize;
+    setPagination(paginationConfig);
+    fetchUsers(page, size);
+  }
 
   const [isBanModalOpen, setIsBanModalOpen] = useState(false)
   const [userToBan, setUserToBan] = useState(null)
-  
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const data = await getUser();
-        console.log("Fetched users:", data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    }
-    fetchUsers();
-  }, []);
 
+  // Handle lock user action
   const handleLockUser = (userId) => {
     setUserToBan(userId)
     setIsBanModalOpen(true)
@@ -58,7 +64,6 @@ const AdminUsers = () => {
 
   const confirmBan = async () => {
     try {
-      // TODO: Add API call to ban user
       // await banUserAPI(userToBan);
       console.log("Ban user:", userToBan)
       message.success("Chặn người dùng thành công!")
@@ -75,19 +80,33 @@ const AdminUsers = () => {
     setUserToBan(null)
   }
 
+  // Filter users based on search query
   const filteredUsers = users.filter(
     (user) =>
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.id.includes(searchQuery),
+      user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.id?.toString().includes(searchQuery),
   )
+
+  // Pagination configuration for UserTable
+  const paginationConfig = {
+    ...pagination,
+    position: ["bottomCenter"],
+    showSizeChanger: false,
+    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
+  }
 
   return (
     <AdminLayout title="ADMIN">
       <div className="space-y-6">
         <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Tìm kiếm..." />
-
-        <UserTable users={filteredUsers} onLockUser={handleLockUser} />
+        <UserTable 
+          users={filteredUsers} 
+          onLockUser={handleLockUser} 
+          pagination={paginationConfig}
+          onTableChange={handleTableChange}
+          loading={loading}
+        />
       </div>
 
       <Modal

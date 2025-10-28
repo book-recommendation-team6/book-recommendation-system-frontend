@@ -54,7 +54,7 @@ const columns = [
   },
 ]
 
-const BookTable = ({ books, onEdit, onDelete }) => {
+const BookTable = ({ books, onEdit, onDelete, pagination, onTableChange, loading: tableLoading }) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -106,7 +106,9 @@ const BookTable = ({ books, onEdit, onDelete }) => {
       >
         <Table
           rowSelection={rowSelection}
-          pagination={{ position: ["bottomCenter"],  size: "large" }}
+          pagination={pagination}
+          onChange={onTableChange}
+          loading={tableLoading}
           columns={columns}
           dataSource={dataSource}
           size="large"

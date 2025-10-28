@@ -8,18 +8,21 @@ import SidePanel from "./SidePanel";
 import { AnimatePresence } from "framer-motion";
 import useTheme from "../../hook/useTheme"; 
 
+import { useLocation } from "react-router-dom";
+
 const LS_POS_KEY = "reader:cfi";
 const LS_BM_KEY = "reader:bookmarks";
 
 
 
 export default function EpubCoreViewer({
-  src = "https://tiemsach.org/ebook/Lich Su Van Vat - Bill Bryson.epub",
   onBack,
 }) {
 
   const [theme, setTheme] = useTheme();
 
+  const {src} =  useLocation().state || {src: ""};
+  console.log("BookReader src:", src);
   const resolveTheme = () => {
     if (theme === 'dark') return 'dark';
     if (theme === 'light') return 'light';
@@ -171,6 +174,7 @@ export default function EpubCoreViewer({
       } catch (e) {
         setError("Không tải được sách. Vui lòng kiểm tra đường dẫn hoặc CORS.");
         setIsLoading(false);
+        console.error("Epub init error:", e);
       }
     })();
 

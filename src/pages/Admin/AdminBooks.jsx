@@ -22,21 +22,50 @@ const AdminBooks = () => {
   const navigate = useNavigate()
   const [bookData, setBookData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("")
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  })
+  const [loading, setLoading] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [bookToDelete, setBookToDelete] = useState(null)
 
+  const fetchBooks = async (page = 0, size = 10) => {
+    setLoading(true)
+    try {
+      const response = await getBooks(page, size);
+      console.log("Fetched books:", response);
+      
+      // Handle response structure from backend
+      const content = response.data?.content || response.content || [];
+      const total = response.data?.totalElements || response.totalElements || 0;
+      
+      setBookData(content);
+      setPagination(prev => ({
+        ...prev,
+        total,
+        current: page + 1, // AntD uses 1-based, backend uses 0-based
+      }));
+    } catch (error) {
+      console.error("Error fetching books:", error);
+      message.error("Không thể tải danh sách sách");
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const books =  await getBooks();
-        console.log("Fetched books:", books);
-        setBookData(books);
-      } catch (error) {
-        console.error("Error fetching books:", error);
-      }
-    };
-    fetchBooks();
+    fetchBooks(0, pagination.pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleTableChange = (paginationConfig) => {
+    const page = paginationConfig.current - 1; // Convert to 0-based
+    const size = paginationConfig.pageSize;
+    setPagination(paginationConfig);
+    fetchBooks(page, size);
+  }
 
   const handleSearch = (query) => {
     setSearchQuery(query)
@@ -74,6 +103,22 @@ const AdminBooks = () => {
     setBookToDelete(null)
   }
 
+  const filteredBooks = bookData.filter(
+    (book) =>
+      book.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      book.authors?.some(author => 
+        author.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      ) ||
+      book.publisher?.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  const paginationConfig = {
+    ...pagination,
+    position: ["bottomCenter"],
+    showSizeChanger: false,
+    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} sách`,
+  }
+
   return (
     <AdminLayout title="ADMIN">
       <div className="space-y-4 sm:space-y-6">
@@ -91,7 +136,14 @@ const AdminBooks = () => {
           </Button>
         </div>
 
-        <BookTable books={bookData} onEdit={handleEditBook} onDelete={handleDeleteBook} />
+        <BookTable 
+          books={filteredBooks} 
+          onEdit={handleEditBook} 
+          onDelete={handleDeleteBook}
+          pagination={paginationConfig}
+          onTableChange={handleTableChange}
+          loading={loading}
+        />
       </div>
 
       <Modal

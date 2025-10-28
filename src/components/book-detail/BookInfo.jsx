@@ -20,8 +20,8 @@ const BookInfo = React.memo(({ book, onRead, onFavorite, onDownload, isFavorited
       {/* Metadata */}
       <BookMetadata
         metadata={{
-          author: book.category,
-          genre: book.author,
+          author: book.authors,
+          genre: book.category,
           publisher: book.publisher,
           publishDate: book.publishDate,
         }}
