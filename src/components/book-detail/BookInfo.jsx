@@ -6,7 +6,7 @@ import BookDescription from './BookDescription';
 import ReviewsSection from './ReviewsSection';
 
 
-const BookInfo = React.memo(({ book, onRead, onFavorite, onDownload, isFavorited, loadingFavorite }) => {
+const BookInfo = React.memo(({ book, onRead, onFavorite, onDownload, isFavorited, loadingFavorite, onReviewSubmit }) => {
   return (
     <div className="lg:col-span-3">
       <h1 className="text-4xl font-bold text-gray-900 mb-4">{book.title}</h1>
@@ -14,7 +14,7 @@ const BookInfo = React.memo(({ book, onRead, onFavorite, onDownload, isFavorited
       {/* Rating */}
       <div className="flex items-center gap-3 mb-6">
         <StarRating rating={book.rating} showValue={false} />
-        <span className="text-sm text-gray-600">{book.reviews}</span>
+        <span className="text-sm text-gray-600">{book.totalReviews} Đánh giá</span>
       </div>
 
       {/* Metadata */}
@@ -42,10 +42,12 @@ const BookInfo = React.memo(({ book, onRead, onFavorite, onDownload, isFavorited
       {/* Reviews */}
       <ReviewsSection
         rating={book.rating}
-        totalReviews={book.reviews}
+        totalReviews={book.totalReviews}
         reviews={book.reviewsList || []}
         bookTitle={book.title}
         onLoadMore={() => console.log('Load more reviews')}
+        onReviewSubmit={onReviewSubmit}
+
       />
     </div>
   );

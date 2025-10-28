@@ -7,6 +7,8 @@ import scrollToTop from '../utils/scrollToTop';
 import {Link} from "react-router-dom";
 import useAuth from '../hook/useAuth';
 import { useMessage } from '../contexts/MessageProvider';
+import { message as antdMessage } from 'antd';
+import { createOrUpdateRating, getBookRatings, getAverageRatingByBookId } from '../services/ratingService.js';
 import { getBookFavorites, addFavorite, removeFavorite } from '../services/bookFavorite';
 import { getBooks } from '../services/manageBookService';
 import { useParams } from "react-router-dom";
@@ -52,8 +54,11 @@ const BookDetail = () => {
   const { user, isAuthenticated } = useAuth();
   const message = useMessage();
   
+  const [reviews, setReviews] = useState([]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
   
   scrollToTop();
 
@@ -125,6 +130,38 @@ const BookDetail = () => {
   }, [bookData]);
 
   useEffect(() => {
+    const fetchReviewsAndRating = async () => {
+      try {
+        // userId='0' → Backend sẽ trả TẤT CẢ ratings của sách
+        const fetchedReviews = await getBookRatings('0', book.id);
+        
+        const mappedReviews = (fetchedReviews || []).map(review => ({
+          name: review.userName,
+          date: review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : 'N/A',
+          rating: review.value,
+          comment: review.comment,
+        }));
+        
+        const calculatedAvgRating = mappedReviews.length > 0 
+          ? mappedReviews.reduce((sum, review) => sum + review.rating, 0) / mappedReviews.length 
+          : 0;
+        
+        setReviews(mappedReviews);
+        setAvgRating(calculatedAvgRating);
+        setTotalReviews(mappedReviews.length);
+      } catch (error) {
+        console.error('Failed to fetch reviews:', error);
+        setReviews([]);
+        setAvgRating(0);
+        setTotalReviews(0);
+      }
+    };
+    fetchReviewsAndRating();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [book.id]);
+
+
+  useEffect(() => {
     const checkFavoriteStatus = async () => {
       if (!book?.id || !isAuthenticated || !user?.id) {
         return;
@@ -144,6 +181,44 @@ const BookDetail = () => {
 
     checkFavoriteStatus();
   }, [book?.id, isAuthenticated, user?.id]);
+
+
+  const handleReviewSubmit = useCallback(async (reviewData) => {
+    if (!isAuthenticated || !user?.id) {
+      antdMessage.warning('Vui lòng đăng nhập để thực hiện đánh giá.');
+      return;
+    }
+
+    try {
+      const { rating, comment } = reviewData;
+      
+      // Submit rating
+      await createOrUpdateRating(user.id, book.id, { value: rating, comment });
+      
+      // Fetch lại TẤT CẢ reviews với userId='0'
+      const allReviews = await getBookRatings('0', book.id);
+      
+      const mappedReviews = (allReviews || []).map(review => ({
+        name: review.userName,
+        date: review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : 'N/A',
+        rating: review.value,
+        comment: review.comment,
+      }));
+
+      const calculatedAvgRating = mappedReviews.length > 0 
+        ? mappedReviews.reduce((sum, review) => sum + review.rating, 0) / mappedReviews.length 
+        : 0;
+
+      setReviews(mappedReviews);
+      setAvgRating(calculatedAvgRating);
+      setTotalReviews(mappedReviews.length);
+      
+      antdMessage.success('Cảm ơn bạn đã gửi đánh giá!');
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      antdMessage.error('Gửi đánh giá thất bại. Vui lòng thử lại.');
+    }
+  }, [isAuthenticated, user?.id, book.id]);
 
 
   // // Event handlers
@@ -260,11 +335,17 @@ const BookDetail = () => {
                   <Suspense fallback={<div className="text-center py-4">Loading...</div>}>
                     <BookCover src={book.cover} alt={book.title} />
                     <BookInfo
-                      book={book}
+                      book={{ 
+                      ...book, 
+                      rating: avgRating, 
+                      totalReviews: totalReviews,
+                      reviewsList: reviews 
+                    }}
                       onRead={handleRead}
                       onFavorite={handleFavorite}
                       isFavorited={isFavorited}
                       loadingFavorite={loadingFavorite}
+                      onReviewSubmit={handleReviewSubmit}
                     />
                   </Suspense>
                 </div>

@@ -4,9 +4,8 @@ import SectionHeader from '../SectionHeader';
 import ReviewsList from './ReviewsList';
 import ReviewModal from './ReviewModal';
 
-const ReviewsSection = React.memo(({ rating, totalReviews, reviews, onLoadMore, bookTitle }) => {
+const ReviewsSection = React.memo(({ rating, totalReviews, reviews, onLoadMore, bookTitle, onReviewSubmit }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-    const [reviewsList, setReviewsList] = useState(reviews);
 
     const handleWriteReview = () => {
         setIsReviewModalOpen(true);
@@ -18,10 +17,9 @@ const ReviewsSection = React.memo(({ rating, totalReviews, reviews, onLoadMore, 
 
     const handleSubmitReview = (newReview) => {
         // Add new review to the beginning of the list
-        setReviewsList([newReview, ...reviewsList]);
-        
-        // In a real app, you would also send this to your backend API
-        console.log('New review submitted:', newReview);
+        if (onReviewSubmit) {
+            onReviewSubmit(newReview);
+        }
     };
     return (
         <>
