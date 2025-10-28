@@ -21,7 +21,7 @@ const RatingSummary = React.memo(({ rating, totalReviews, onWriteReview, ratingD
           <div className="text-6xl font-bold text-gray-900 mb-2">
             {rating.toFixed(1)}
           </div>
-          <div className="text-sm text-gray-600 mb-4">{totalReviews}</div>
+          <div className="text-sm text-gray-600 mb-4">{totalReviews} đánh giá</div>
         </div>
       </div>
 

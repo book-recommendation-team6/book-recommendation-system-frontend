@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { message } from 'antd';
 import StarRating from './StarRating';
 
 const ReviewModal = ({ isOpen, onClose, onSubmit, bookTitle }) => {
@@ -10,11 +11,11 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, bookTitle }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (rating === 0) {
-      alert('Vui lòng chọn số sao đánh giá');
+      message.warning('Vui lòng chọn số sao đánh giá');
       return;
     }
     if (comment.trim() === '') {
-      alert('Vui lòng nhập nhận xét');
+      message.warning('Vui lòng nhập nhận xét');
       return;
     }
     

@@ -5,14 +5,16 @@ import { Breadcrumb } from 'antd';
 import scrollToTop from '../utils/scrollToTop';
 import {Link} from "react-router-dom";
 import useAuth from '../hook/useAuth';
-import { useMessage } from '../contexts/MessageProvider';
+import { useMessage } from '../contexts/MessageProvider'; // This seems to be unused, antd message is used directly.
+import { message as antdMessage } from 'antd';
 import { getBookFavorites, addFavorite, removeFavorite } from '../services/bookFavorite';
 // // Import all the new components
 const BookCover = React.lazy(() => import('../components/book-detail/BookCover'));
 const BookInfo = React.lazy(() => import('../components/book-detail/BookInfo'));
 const RelatedBooks = React.lazy(() => import('../components/book-detail/RelatedBooks'));
 
-// Error Boundary Component
+import { createOrUpdateRating, getBookRatings, getAverageRatingByBookId } from '../services/ratingService.js';
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -44,10 +46,13 @@ class ErrorBoundary extends React.Component {
 const BookDetail = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const message = useMessage();
+  const message = useMessage(); // This is from your context
   
+  const [reviews, setReviews] = useState([]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
   
   scrollToTop();
   // Mock data - would come from API/props in real app
@@ -127,6 +132,37 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
   ], []);
 
   useEffect(() => {
+    const fetchReviewsAndRating = async () => {
+      try {
+        // userId='0' → Backend sẽ trả TẤT CẢ ratings của sách
+        const fetchedReviews = await getBookRatings('0', book.id);
+        
+        const mappedReviews = (fetchedReviews || []).map(review => ({
+          name: review.userName,
+          date: review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : 'N/A',
+          rating: review.value,
+          comment: review.comment,
+        }));
+        
+        const calculatedAvgRating = mappedReviews.length > 0 
+          ? mappedReviews.reduce((sum, review) => sum + review.rating, 0) / mappedReviews.length 
+          : 0;
+        
+        setReviews(mappedReviews);
+        setAvgRating(calculatedAvgRating);
+        setTotalReviews(mappedReviews.length);
+      } catch (error) {
+        console.error('Failed to fetch reviews:', error);
+        setReviews([]);
+        setAvgRating(0);
+        setTotalReviews(0);
+      }
+    };
+    fetchReviewsAndRating();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [book.id]);
+
+  useEffect(() => {
     const checkFavoriteStatus = async () => {
       if (isAuthenticated && user?.id) {
         try {
@@ -151,6 +187,43 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
     // Navigate to reader page with book ID
     navigate(`/reader/${book.id}`);
   }, [book.title, book.id, navigate]);
+
+  const handleReviewSubmit = useCallback(async (reviewData) => {
+    if (!isAuthenticated || !user?.id) {
+      antdMessage.warning('Vui lòng đăng nhập để thực hiện đánh giá.');
+      return;
+    }
+
+    try {
+      const { rating, comment } = reviewData;
+      
+      // Submit rating
+      await createOrUpdateRating(user.id, book.id, { value: rating, comment });
+      
+      // Fetch lại TẤT CẢ reviews với userId='0'
+      const allReviews = await getBookRatings('0', book.id);
+      
+      const mappedReviews = (allReviews || []).map(review => ({
+        name: review.userName,
+        date: review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : 'N/A',
+        rating: review.value,
+        comment: review.comment,
+      }));
+
+      const calculatedAvgRating = mappedReviews.length > 0 
+        ? mappedReviews.reduce((sum, review) => sum + review.rating, 0) / mappedReviews.length 
+        : 0;
+
+      setReviews(mappedReviews);
+      setAvgRating(calculatedAvgRating);
+      setTotalReviews(mappedReviews.length);
+      
+      antdMessage.success('Cảm ơn bạn đã gửi đánh giá!');
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      antdMessage.error('Gửi đánh giá thất bại. Vui lòng thử lại.');
+    }
+  }, [isAuthenticated, user?.id, book.id]);
 
   const handleFavorite = useCallback(async () => {
     // Check if user is logged in
@@ -193,6 +266,8 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
     { title: <p href="">Chi tiết sách</p> },
   ], []);
 
+
+
   return (
     <MainLayout showHero={false}>
       {/* Breadcrumb */}
@@ -212,12 +287,18 @@ Những đông cháy của chiến trường trưa đổ giá đếm bờ sông 
                 <Suspense fallback={<div className="text-center py-4">Loading...</div>}>
                   <BookCover src={book.cover} alt={book.title} />
                   <BookInfo
-                    book={book}
+                    book={{ 
+                      ...book, 
+                      rating: avgRating, 
+                      totalReviews: totalReviews,
+                      reviewsList: reviews 
+                    }}
                     onRead={handleRead}
                     onFavorite={handleFavorite}
                     onDownload={handleDownload}
                     isFavorited={isFavorited}
                     loadingFavorite={loadingFavorite}
+                    onReviewSubmit={handleReviewSubmit}
                   />
                 </Suspense>
               </div>
