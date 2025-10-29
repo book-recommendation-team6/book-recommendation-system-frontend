@@ -11,7 +11,6 @@ const Header = ({
   searchValue,
   onSearchChange,
   onSearchSubmit,
-  onGenreSelect,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [internalSearch, setInternalSearch] = useState('');
@@ -69,7 +68,7 @@ const Header = ({
                 Thể loại
                 <ChevronDown className="w-4 h-4" />
               </button>
-              <CategoryDropdown onSelect={onGenreSelect} />
+              <CategoryDropdown />
             </div>
 
             {/* Search Bar */}

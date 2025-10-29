@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../layout/MainLayout";
 import BookCard from "../components/BookCard";
-import books from "../data/book";
 import { getGenres } from "../services/genreService";
+import { getBooksByGenre } from "../services/manageBookService";
 
 const CategoryBooks = () => {
   const { categoryId } = useParams();
@@ -15,6 +15,7 @@ const CategoryBooks = () => {
   const [genreName, setGenreName] = useState(initialCategoryName);
   const [genreDescription, setGenreDescription] = useState("");
   const [genresLoading, setGenresLoading] = useState(false);
+  const [booksLoading, setBooksLoading] = useState(false);
   const [sortBy, setSortBy] = useState('newest'); // newest, popular, title
   const [viewMode, setViewMode] = useState('grid'); // grid, list
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,25 +50,36 @@ const CategoryBooks = () => {
   }, [categoryId, initialCategoryName]);
 
   useEffect(() => {
-    // TODO: Fetch books by category from API
-    // For now, use mock data
-    const categoryBooks = books.filter(book => 
-      book.category === genreName.toLowerCase() || 
-      book.genre === genreName
-    );
-    setFilteredBooks(categoryBooks);
-  }, [categoryId, genreName]);
+    const fetchBooksByCategory = async () => {
+      if (!categoryId) return;
+      
+      setBooksLoading(true);
+      try {
+        // Fetch books by genre from API
+        const response = await getBooksByGenre(categoryId, 0, 100); // Lấy 100 sách
+        const books = response?.data?.content || response?.content || [];
+        setFilteredBooks(Array.isArray(books) ? books : []);
+      } catch (error) {
+        console.error("Không thể tải sách theo thể loại:", error);
+        setFilteredBooks([]);
+      } finally {
+        setBooksLoading(false);
+      }
+    };
+
+    fetchBooksByCategory();
+  }, [categoryId]);
 
   // Sort books
   const sortedBooks = [...filteredBooks].sort((a, b) => {
     switch (sortBy) {
       case 'title':
-        return a.title.localeCompare(b.title);
+        return (a.title || '').localeCompare(b.title || '');
       case 'popular':
-        return (b.rating || 0) - (a.rating || 0);
+        return (b.averageRating || 0) - (a.averageRating || 0);
       case 'newest':
       default:
-        return b.id - a.id;
+        return (b.publicationYear || 0) - (a.publicationYear || 0);
     }
   });
 
@@ -106,7 +118,7 @@ const CategoryBooks = () => {
                   {genreName}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {genresLoading ? (
+                  {genresLoading || booksLoading ? (
                     "Đang tải thông tin thể loại..."
                   ) : (
                     <>
@@ -190,7 +202,12 @@ const CategoryBooks = () => {
           </div>
 
           {/* Books Grid/List */}
-          {currentBooks.length === 0 ? (
+          {booksLoading ? (
+            <div className="text-center py-16">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              <p className="mt-4 text-gray-600 dark:text-gray-300">Đang tải sách...</p>
+            </div>
+          ) : currentBooks.length === 0 ? (
             <div className="text-center py-16">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
                 <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,7 +238,7 @@ const CategoryBooks = () => {
                     >
                       <div className="flex gap-4">
                         <img
-                          src={book.cover}
+                          src={book.coverImageUrl || "/placeholder.svg"}
                           alt={book.title}
                           className="w-24 h-32 object-cover rounded-lg"
                         />
@@ -230,19 +247,19 @@ const CategoryBooks = () => {
                             <a href={`/books/${book.id}`}>{book.title}</a>
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                            {book.author}
+                            {book.authors?.map(a => a.name).join(", ") || "Không rõ tác giả"}
                           </p>
                           <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                            {book.rating && (
+                            {book.averageRating !== undefined && (
                               <div className="flex items-center gap-1">
                                 <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                 </svg>
-                                <span>{book.rating}</span>
+                                <span>{book.averageRating.toFixed(1)}</span>
                               </div>
                             )}
                             <span>•</span>
-                            <span>{book.category}</span>
+                            <span>{book.genres?.map(g => g.name).join(", ") || "Chưa phân loại"}</span>
                           </div>
                         </div>
                       </div>
