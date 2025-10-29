@@ -1,6 +1,7 @@
 import "@ant-design/v5-patch-for-react-19" // Temporary patch for React 19 compatibility
 import "./App.css"
 import Home from "./pages/Home.jsx"
+import SearchResults from "./pages/SearchResults.jsx"
 import { Routes, Route } from "react-router-dom"
 import BookDetail from "./pages/BookDetail"
 import CategoryBooks from "./pages/CategoryBooks"
@@ -36,6 +37,14 @@ function App() {
           element={
             <UserRoute>
               <Home />
+            </UserRoute>
+          } 
+        />
+        <Route 
+          path={PATHS.SEARCH}
+          element={
+            <UserRoute>
+              <SearchResults />
             </UserRoute>
           } 
         />

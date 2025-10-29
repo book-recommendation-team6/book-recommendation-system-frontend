@@ -1,5 +1,6 @@
 export const PATHS = {
   HOME: "/",
+  SEARCH: "/search",
   CATEGORY: "/category/:categoryId",
   MANAGE_ACCOUNT_REDIRECT: {
     ROOT: "/manage-account",

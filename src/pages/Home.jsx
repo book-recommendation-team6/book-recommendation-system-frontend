@@ -1,154 +1,125 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Hero from "../components/Hero";
 import BookCarousel from "../components/BookCarousel";
 import MainLayout from "../layout/MainLayout";
-import { getBooks, getBooksByGenre, searchBooks } from "../services/manageBookService";
+import { getBooks, getBooksByGenre } from "../services/manageBookService";
 
 const DEFAULT_PAGE_SIZE = 12;
 
 const Home = () => {
-  const [bookList, setBookList] = useState([]);
-  const [selectedGenre, setSelectedGenre] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const [allBooks, setAllBooks] = useState([]);
+  const [genre1Books, setGenre1Books] = useState([]);
+  const [genre2Books, setGenre2Books] = useState([]);
+  const [genre3Books, setGenre3Books] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const selectedGenreRef = useRef(null);
-  const searchEffectInitialized = useRef(false);
-  const genreEffectInitialized = useRef(false);
-  const searchTermRef = useRef("");
-  const suppressNextSearchEffect = useRef(false);
+  
+  // Lazy loading states
+  const [genre1Loaded, setGenre1Loaded] = useState(false);
+  const [genre2Loaded, setGenre2Loaded] = useState(false);
+  const [genre3Loaded, setGenre3Loaded] = useState(false);
+  
+  // Refs to track loaded state (for observer callback closure)
+  const genre1LoadedRef = useRef(false);
+  const genre2LoadedRef = useRef(false);
+  const genre3LoadedRef = useRef(false);
+  
+  // Refs for intersection observer
+  const genre1Ref = useRef(null);
+  const genre2Ref = useRef(null);
+  const genre3Ref = useRef(null);
 
-  const loadBooks = useCallback(async ({ genreId, keyword } = {}) => {
-    setLoading(true);
-    setError(null);
+  // Sync refs with state
+  useEffect(() => { genre1LoadedRef.current = genre1Loaded; }, [genre1Loaded]);
+  useEffect(() => { genre2LoadedRef.current = genre2Loaded; }, [genre2Loaded]);
+  useEffect(() => { genre3LoadedRef.current = genre3Loaded; }, [genre3Loaded]);
 
-    try {
-      let response;
+  // Load all books on initial mount
+  useEffect(() => {
+    const loadAllBooks = async () => {
+      setLoading(true);
+      setError(null);
 
-      if (keyword) {
-        response = await searchBooks(keyword, 0, DEFAULT_PAGE_SIZE);
-      } else if (genreId) {
-        response = await getBooksByGenre(genreId, 0, DEFAULT_PAGE_SIZE);
-      } else {
-        response = await getBooks(0, DEFAULT_PAGE_SIZE);
+      try {
+        const response = await getBooks(0, DEFAULT_PAGE_SIZE);
+        const books = response?.data?.content || response?.content || [];
+        setAllBooks(Array.isArray(books) ? books : []);
+      } catch {
+        setError("Không thể tải danh sách sách. Vui lòng thử lại sau.");
+        setAllBooks([]);
+      } finally {
+        setLoading(false);
       }
+    };
 
+    loadAllBooks();
+  }, []);
+
+  // Load books by genre
+  const loadGenreBooks = useCallback(async (genreId, setter) => {
+    try {
+      const response = await getBooksByGenre(genreId, 0, DEFAULT_PAGE_SIZE);
       const books = response?.data?.content || response?.content || [];
-      setBookList(Array.isArray(books) ? books : []);
-    } catch (err) {
-      console.error("Failed to load books for home page:", err);
-      setError("Không thể tải danh sách sách. Vui lòng thử lại sau.");
-      setBookList([]);
-    } finally {
-      setLoading(false);
+      setter(Array.isArray(books) ? books : []);
+    } catch {
+      setter([]);
     }
   }, []);
 
+  // Intersection Observer for lazy loading
   useEffect(() => {
-    selectedGenreRef.current = selectedGenre;
-  }, [selectedGenre]);
+    // Chỉ khởi tạo observer sau khi load xong allBooks
+    if (loading) return;
 
-  useEffect(() => {
-    searchTermRef.current = searchTerm;
-  }, [searchTerm]);
+    const genreConfigs = [
+      { ref: genre1Ref, loadedRef: genre1LoadedRef, setter: setGenre1Loaded, genreId: 9, setBooks: setGenre1Books },
+      { ref: genre2Ref, loadedRef: genre2LoadedRef, setter: setGenre2Loaded, genreId: 10, setBooks: setGenre2Books },
+      { ref: genre3Ref, loadedRef: genre3LoadedRef, setter: setGenre3Loaded, genreId: 6, setBooks: setGenre3Books },
+    ];
 
-  useEffect(() => {
-    loadBooks();
-  }, [loadBooks]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const config = genreConfigs.find((c) => c.ref.current === entry.target);
+            if (config && !config.loadedRef.current) {
+              config.loadedRef.current = true;
+              config.setter(true);
+              loadGenreBooks(config.genreId, config.setBooks);
+            }
+          }
+        });
+      },
+      { root: null, rootMargin: "100px", threshold: 0.1 }
+    );
 
-  useEffect(() => {
-    if (!searchEffectInitialized.current) {
-      searchEffectInitialized.current = true;
-      return;
-    }
+    // Observe all genre refs
+    genreConfigs.forEach((config) => {
+      if (config.ref.current) observer.observe(config.ref.current);
+    });
 
-    const trimmedSearch = searchTerm.trim();
-    if (suppressNextSearchEffect.current && !trimmedSearch) {
-      suppressNextSearchEffect.current = false;
-      return;
-    }
-    const handler = setTimeout(() => {
-      if (trimmedSearch) {
-        loadBooks({ keyword: trimmedSearch });
-        return;
-      }
-
-      const currentGenreId = selectedGenreRef.current?.id;
-      if (currentGenreId) {
-        loadBooks({ genreId: currentGenreId });
-      } else {
-        loadBooks();
-      }
-    }, 400);
-
-    return () => clearTimeout(handler);
-  }, [searchTerm, loadBooks]);
-
-  useEffect(() => {
-    if (!genreEffectInitialized.current) {
-      genreEffectInitialized.current = true;
-      return;
-    }
-
-    if (searchTermRef.current.trim()) {
-      return;
-    }
-
-    const genreId = selectedGenre?.id;
-    if (genreId) {
-      loadBooks({ genreId });
-    } else {
-      loadBooks();
-    }
-  }, [selectedGenre, loadBooks]);
-
-  const handleGenreSelect = (genre) => {
-    setSelectedGenre(genre ?? null);
-    if (searchTerm) {
-      suppressNextSearchEffect.current = true;
-      setSearchTerm("");
-    }
-  };
-
-  const handleSearchChange = (value) => {
-    setSearchTerm(value);
-    if (value.trim() && selectedGenreRef.current) {
-      setSelectedGenre(null);
-    }
-  };
+    return () => {
+      genreConfigs.forEach((config) => {
+        if (config.ref.current) observer.unobserve(config.ref.current);
+      });
+      observer.disconnect();
+    };
+  }, [loading, loadGenreBooks]);
 
   const handleSearchSubmit = (keyword) => {
-    const normalizedKeyword = keyword.trim();
-    handleSearchChange(normalizedKeyword);
+    const trimmedKeyword = keyword.trim();
+    if (trimmedKeyword) {
+      navigate(`/search?q=${encodeURIComponent(trimmedKeyword)}`);
+    }
   };
-
-  const activeGenreName = useMemo(() => {
-    if (!selectedGenre) {
-      return null;
-    }
-    return selectedGenre.name ?? null;
-  }, [selectedGenre]);
-
-  const sectionTitle = useMemo(() => {
-    if (searchTerm) {
-      return `Kết quả tìm kiếm cho "${searchTerm}"`;
-    }
-    if (activeGenreName) {
-      return `Sách thể loại ${activeGenreName}`;
-    }
-    return "SÁCH DÀNH CHO BẠN";
-  }, [searchTerm, activeGenreName]);
-
-  const showEmptyState = !loading && !error && bookList.length === 0;
 
   return (
     <MainLayout
       showHero={true}
       heroContent={<Hero />}
-      searchValue={searchTerm}
-      onSearchChange={handleSearchChange}
       onSearchSubmit={handleSearchSubmit}
-      onGenreSelect={handleGenreSelect}
     >
       <main className="mt-8 px-4 sm:px-6 lg:px-8 space-y-8">
         {loading && (
@@ -164,16 +135,67 @@ const Home = () => {
           </div>
         )}
 
-        {showEmptyState && (
-          <div className="py-16 text-center bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
-            <p className="text-gray-600 dark:text-gray-300">
-              Không tìm thấy sách phù hợp với lựa chọn của bạn.
-            </p>
-          </div>
-        )}
+        {!loading && !error && (
+          <>
+            {/* All Books Carousel */}
+            {allBooks.length > 0 && (
+              <BookCarousel books={allBooks} title="SÁCH DÀNH CHO BẠN" />
+            )}
 
-        {!loading && !error && bookList.length > 0 && (
-          <BookCarousel books={bookList} title={sectionTitle} />
+            {/* Genre 1 Carousel with Lazy Loading */}
+            <div ref={genre1Ref} className="min-h-[100px]">
+              {genre1Loaded ? (
+                genre1Books.length > 0 ? (
+                  <BookCarousel books={genre1Books} title="TÀI CHÍNH" />
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-gray-600 dark:text-gray-400">Không có sách thể loại Tài chính</p>
+                  </div>
+                )
+              ) : (
+                <div className="py-16 text-center">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+                  <p className="mt-4 text-gray-500 dark:text-gray-400">Đang tải thể loại Khoa học...</p>
+                </div>
+              )}
+            </div>
+
+            {/* Genre 2 Carousel with Lazy Loading */}
+            <div ref={genre2Ref} className="min-h-[100px]">
+              {genre2Loaded ? (
+                genre2Books.length > 0 ? (
+                  <BookCarousel books={genre2Books} title="KỸ NĂNG SỐNG" />
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-gray-600 dark:text-gray-400">Không có sách thể loại Kỹ năng sống</p>
+                  </div>
+                )
+              ) : (
+                <div className="py-16 text-center">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+                  <p className="mt-4 text-gray-500 dark:text-gray-400">Đang tải thể loại Kỹ năng sống...</p>
+                </div>
+              )}
+            </div>
+
+            {/* Genre 3 Carousel with Lazy Loading */}
+            <div ref={genre3Ref} className="min-h-[100px]">
+              {genre3Loaded ? (
+                genre3Books.length > 0 ? (
+                  <BookCarousel books={genre3Books} title="LỊCH SỬ" />
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-gray-600 dark:text-gray-400">Không có sách thể loại Lịch sử</p>
+                  </div>
+                )
+              ) : (
+                <div className="py-16 text-center">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+                  <p className="mt-4 text-gray-500 dark:text-gray-400">Đang tải thể loại Kinh tế...</p>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </main>
     </MainLayout>

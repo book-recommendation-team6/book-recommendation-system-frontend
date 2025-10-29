@@ -14,14 +14,14 @@ const RatingSummary = React.memo(({ rating, totalReviews, onWriteReview, ratingD
   const distribution = { ...defaultDistribution, ...ratingDistribution };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 mb-8 p-4 bg-gray-100 border border-gray-300 rounded-xl">
+    <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 mb-8 p-4 bg-gray-100 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl">
       {/* Rating Summary */}
       <div className="lg:col-span-1">
         <div className="text-center">
-          <div className="text-6xl font-bold text-gray-900 mb-2">
+          <div className="text-6xl font-bold text-gray-900 dark:text-white mb-2">
             {rating.toFixed(1)}
           </div>
-          <div className="text-sm text-gray-600 mb-4">{totalReviews} đánh giá</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">{totalReviews} đánh giá</div>
         </div>
       </div>
 
@@ -33,7 +33,7 @@ const RatingSummary = React.memo(({ rating, totalReviews, onWriteReview, ratingD
               <div className="flex flex-1 text-yellow-400 text-xs justify-end">
                 <StarRating rating={stars} showValue={false} size="w-3 h-3" />
               </div>
-              <div className="flex-5 bg-gray-200 rounded-full h-2">
+              <div className="flex-5 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                 <div
                   className="bg-yellow-400 h-2 rounded-full"
                   style={{ width: `${distribution[stars]}%` }}
@@ -46,7 +46,7 @@ const RatingSummary = React.memo(({ rating, totalReviews, onWriteReview, ratingD
 
       <button 
         onClick={onWriteReview}
-        className="w-full flex items-center gap-1 lg:col-start-6 lg:col-span-3 py-2 px-3 bg-teal-500 text-white rounded-full hover:bg-teal-600 transition-colors"
+        className="w-full flex items-center gap-1 lg:col-start-6 lg:col-span-3 py-2 px-3 bg-teal-500 dark:bg-teal-600 text-white rounded-full hover:bg-teal-600 dark:hover:bg-teal-700 transition-colors"
     >
         <PencilLine size={20} /> Viết đánh giá
       </button>

@@ -16,10 +16,10 @@ const BookMetadata = React.memo(({ metadata }) => {
       {metadataItems.map((item, index) => (
         <div key={item.label} className={index < 2 ? 'space-y-4' : ''}>
           <div className="flex">
-            <span className={`${index >= 2 ? 'w-36' : 'w-32'} font-semibold text-gray-700`}>
+            <span className={`${index >= 2 ? 'w-36' : 'w-32'} font-semibold text-gray-700 dark:text-gray-300`}>
               {item.label}:
             </span>
-            <span className="text-gray-600">{item.value}</span>
+            <span className="text-gray-600 dark:text-gray-400">{item.value}</span>
           </div>
         </div>
       ))}

@@ -426,32 +426,39 @@ const BookDetail = () => {
     { title: <p>Chi tiết sách</p> },
   ], []);
 
+  const handleSearchSubmit = useCallback((keyword) => {
+    const trimmedKeyword = keyword.trim();
+    if (trimmedKeyword) {
+      navigate(`/search?q=${encodeURIComponent(trimmedKeyword)}`);
+    }
+  }, [navigate]);
+
   return (
-    <MainLayout showHero={false}>
+    <MainLayout showHero={false} onSearchSubmit={handleSearchSubmit}>
       {/* Breadcrumb */}
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="bg-white p-4 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 p-4 shadow-sm">
           <Breadcrumb separator=">" items={breadcrumbItems} />
         </div>
       </div>
 
       {/* Book Detail Content */}
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div className="bg-white shadow-sm p-8 space-y-16">
+          <div className="bg-white dark:bg-gray-800 shadow-sm p-8 space-y-16">
             {/* Loading State */}
             {loading && (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
-                <p className="mt-4 text-gray-600">Đang tải thông tin sách...</p>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">Đang tải thông tin sách...</p>
               </div>
             )}
 
             {/* Error State - No book found */}
             {!loading && !book && (
               <div className="text-center py-12">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Không tìm thấy sách</h2>
-                <p className="text-gray-600">Sách bạn tìm kiếm không tồn tại hoặc đã bị xóa.</p>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Không tìm thấy sách</h2>
+                <p className="text-gray-600 dark:text-gray-400">Sách bạn tìm kiếm không tồn tại hoặc đã bị xóa.</p>
               </div>
             )}
 

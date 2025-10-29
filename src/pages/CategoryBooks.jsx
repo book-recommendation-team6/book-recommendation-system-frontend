@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../layout/MainLayout";
 import BookCard from "../components/BookCard";
 import books from "../data/book";
@@ -8,6 +8,7 @@ import { getGenres } from "../services/genreService";
 const CategoryBooks = () => {
   const { categoryId } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialCategoryName = searchParams.get("name") || "Thể loại";
   
   const [filteredBooks, setFilteredBooks] = useState([]);
@@ -76,8 +77,15 @@ const CategoryBooks = () => {
   const currentBooks = sortedBooks.slice(indexOfFirstBook, indexOfLastBook);
   const totalPages = Math.ceil(sortedBooks.length / booksPerPage);
 
+  const handleSearchSubmit = useCallback((keyword) => {
+    const trimmedKeyword = keyword.trim();
+    if (trimmedKeyword) {
+      navigate(`/search?q=${encodeURIComponent(trimmedKeyword)}`);
+    }
+  }, [navigate]);
+
   return (
-    <MainLayout>
+    <MainLayout onSearchSubmit={handleSearchSubmit}>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header Section */}

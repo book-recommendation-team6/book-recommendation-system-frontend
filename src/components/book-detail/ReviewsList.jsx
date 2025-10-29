@@ -12,7 +12,7 @@ const ReviewsList = React.memo(({ reviews, onLoadMore, hasMore = true }) => {
         <div className="text-center pt-4">
           <button
             onClick={onLoadMore}
-            className="bg-gray-200 text-black rounded-2xl font-medium py-2 px-4 hover:bg-gray-300 transition-colors"
+            className="bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-2xl font-medium py-2 px-4 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Xem thêm
           </button>

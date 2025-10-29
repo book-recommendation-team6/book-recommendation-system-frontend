@@ -23,7 +23,7 @@ const ReviewsSection = React.memo(({ rating, totalReviews, reviews, onLoadMore, 
     };
     return (
         <>
-        <div className="border-t border-gray-300 pt-8">
+        <div className="border-t border-gray-300 dark:border-gray-600 pt-8">
         <SectionHeader title="Đánh giá & Nhận xét" />
         <div className="grid grid-cols-1">
             <RatingSummary rating={rating} totalReviews={totalReviews}  onWriteReview={handleWriteReview}/>

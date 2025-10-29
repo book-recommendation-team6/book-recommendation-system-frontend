@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { message } from 'antd';
 import StarRating from './StarRating';
 
 const ReviewModal = ({ isOpen, onClose, onSubmit, bookTitle }) => {
@@ -48,17 +47,17 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, bookTitle }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Đánh giá và nhận xét
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -66,13 +65,13 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, bookTitle }) => {
         <form onSubmit={handleSubmit} className="p-6">
           {/* Book title */}
           <div className="mb-6">
-            <p className="text-sm text-gray-600">Đánh giá cho:</p>
-            <p className="font-medium text-gray-900">{bookTitle}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Đánh giá cho:</p>
+            <p className="font-medium text-gray-900 dark:text-white">{bookTitle}</p>
           </div>
 
           {/* Rating Section */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Đánh giá
             </label>
             <div className="flex items-center gap-1">
@@ -100,7 +99,7 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, bookTitle }) => {
               ))}
             </div>
             {rating > 0 && (
-              <p className="text-sm text-gray-600 mt-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                 {rating === 1 && 'Rất tệ'}
                 {rating === 2 && 'Tệ'}
                 {rating === 3 && 'Bình thường'}
@@ -112,19 +111,19 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, bookTitle }) => {
 
           {/* Comment Section */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Nhận xét
             </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Cuốn sách rất hay và ý nghĩa..."
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
               rows={4}
               maxLength={500}
             />
             <div className="flex justify-between items-center mt-2">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {comment.length}/500 ký tự
               </p>
             </div>
@@ -135,13 +134,13 @@ const ReviewModal = ({ isOpen, onClose, onSubmit, bookTitle }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-medium"
+              className="flex-1 px-4 py-2 bg-teal-500 dark:bg-teal-600 text-white rounded-lg hover:bg-teal-600 dark:hover:bg-teal-700 transition-colors font-medium"
             >
               Gửi nhận xét
             </button>
