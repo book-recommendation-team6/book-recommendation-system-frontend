@@ -1,5 +1,6 @@
 
 import React, { useMemo, useCallback, Suspense, useState, useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../layout/MainLayout';
 import { Breadcrumb } from 'antd';
@@ -13,6 +14,8 @@ import { getBookFavorites, addFavorite, removeFavorite } from '../services/bookF
 import { getBooks } from '../services/manageBookService';
 import { useParams } from "react-router-dom";
 import { getBookDetail } from '../services/manageBookService';
+import { API_BASE_URL } from '../config/ApiConfig';
+import { getToken } from '../utils/storage';
 
 // // Import all the new components
 const BookCover = React.lazy(() => import('../components/book-detail/BookCover'));
@@ -131,6 +134,13 @@ const BookDetail = () => {
 
   useEffect(() => {
     const fetchReviewsAndRating = async () => {
+      if (!book?.id) {
+        setReviews([]);
+        setAvgRating(0);
+        setTotalReviews(0);
+        return;
+      }
+
       try {
         // userId='0' → Backend sẽ trả TẤT CẢ ratings của sách
         const fetchedReviews = await getBookRatings('0', book.id);
@@ -158,7 +168,7 @@ const BookDetail = () => {
     };
     fetchReviewsAndRating();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [book.id]);
+  }, [book?.id]);
 
 
   useEffect(() => {
@@ -186,6 +196,11 @@ const BookDetail = () => {
   const handleReviewSubmit = useCallback(async (reviewData) => {
     if (!isAuthenticated || !user?.id) {
       antdMessage.warning('Vui lòng đăng nhập để thực hiện đánh giá.');
+      return;
+    }
+
+    if (!book?.id) {
+      antdMessage.error('Không tìm thấy thông tin sách để đánh giá.');
       return;
     }
 
@@ -218,7 +233,7 @@ const BookDetail = () => {
       console.error('Failed to submit review:', error);
       antdMessage.error('Gửi đánh giá thất bại. Vui lòng thử lại.');
     }
-  }, [isAuthenticated, user?.id, book.id]);
+  }, [isAuthenticated, user?.id, book?.id]);
 
 
   // // Event handlers
@@ -244,8 +259,120 @@ const BookDetail = () => {
       return;
     }
 
-    navigate(`/reader`, { state: { src: readerSrc } });
+    const bookId = Number(book?.id ?? bookData?.id);
+    const readerBookInfo = {
+      id: Number.isFinite(bookId) ? bookId : null,
+      title: book?.title ?? bookData?.title ?? "",
+      coverImageUrl: book?.cover ?? bookData?.coverImageUrl ?? "",
+      authors: bookData?.authors ?? [],
+    };
+
+    navigate(`/reader`, { state: { src: readerSrc, book: readerBookInfo } });
   }
+
+  const handleDownload = useCallback(async () => {
+    if (!isAuthenticated) {
+      message.warning('Vui lòng đăng nhập để tải sách');
+      return;
+    }
+
+    const formats = bookData?.formats || [];
+    const preferredPdf = formats.find(
+      (item) => item.typeName?.trim().toUpperCase() === 'PDF'
+    );
+    const availableFormat = preferredPdf || formats.find(
+      (item) => item.downloadUrl || item.contentUrl
+    );
+
+    if (!availableFormat) {
+      message.warning('Không tìm thấy định dạng phù hợp để tải xuống');
+      return;
+    }
+
+    const downloadUrl = availableFormat.downloadUrl || availableFormat.contentUrl;
+
+    if (!downloadUrl) {
+      message.warning('Đường dẫn tải xuống không khả dụng');
+      return;
+    }
+
+    const bookId = Number(book?.id ?? bookData?.id);
+    if (!Number.isFinite(bookId)) {
+      message.error('Không xác định được sách để tải xuống');
+      return;
+    }
+    const formatId = availableFormat.id;
+    if (!formatId) {
+      message.error('Định dạng sách không hợp lệ');
+      return;
+    }
+
+    const sanitizeFileName = (value) => {
+      if (!value) return 'book';
+      return value
+        .replace(/[^\w\d-]+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'book';
+    };
+
+    const parseFileName = (dispositionHeader) => {
+      if (!dispositionHeader) return null;
+      const utfMatch = dispositionHeader.match(/filename\*=UTF-8''([^;]+)/i);
+      if (utfMatch && utfMatch[1]) {
+        try {
+          return decodeURIComponent(utfMatch[1]);
+        } catch (error) {
+          console.warn('Failed to decode UTF-8 filename:', error);
+        }
+      }
+      const asciiMatch = dispositionHeader.match(/filename=\"?([^\";]+)\"?/i);
+      if (asciiMatch && asciiMatch[1]) {
+        return asciiMatch[1];
+      }
+      return null;
+    };
+
+    const fallbackFileName = () => {
+      const rawTitle = book?.title || bookData?.title || 'book';
+      const sanitizedTitle = sanitizeFileName(rawTitle).toLowerCase();
+      const extension = (availableFormat.typeName || 'pdf').toLowerCase();
+      return sanitizedTitle.endsWith(`.${extension}`) ? sanitizedTitle : `${sanitizedTitle}.${extension}`;
+    };
+
+    const endpointBase = API_BASE_URL.replace(/\/+$/, '');
+    const downloadEndpoint = `${endpointBase}/books/${bookId}/download/${formatId}`;
+    const token = getToken();
+
+    try {
+      const response = await axios.get(downloadEndpoint, {
+        responseType: 'blob',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      const disposition = response.headers['content-disposition'];
+      const resolvedFileName = parseFileName(disposition) || fallbackFileName();
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'application/octet-stream',
+      });
+
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = resolvedFileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(blobUrl);
+      message.success('Bắt đầu tải xuống sách');
+    } catch (error) {
+      console.error('Failed to download file:', error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        message.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        return;
+      }
+      message.error('Tải xuống thất bại. Vui lòng thử lại.');
+    }
+  }, [book?.id, book?.title, bookData?.formats, bookData?.id, bookData?.title, isAuthenticated, message]);
 
   const handleFavorite = useCallback(async () => {
     // Check if user is logged in
@@ -345,6 +472,7 @@ const BookDetail = () => {
                       onFavorite={handleFavorite}
                       isFavorited={isFavorited}
                       loadingFavorite={loadingFavorite}
+                      onDownload={handleDownload}
                       onReviewSubmit={handleReviewSubmit}
                     />
                   </Suspense>

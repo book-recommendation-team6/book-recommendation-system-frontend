@@ -1,6 +1,35 @@
 import React, { useState } from 'react';
 import { ConfigProvider, Button, Table } from 'antd';
 
+const statusLabels = {
+  ACTIVE: { text: 'Đã kích hoạt', className: 'text-teal-500 font-medium' },
+  INACTIVE: { text: 'Chưa kích hoạt', className: 'text-orange-500 font-medium' },
+  BANNED: { text: 'Bị ban', className: 'text-red-500 font-medium' },
+  UNKNOWN: { text: 'Không xác định', className: 'text-gray-500 font-medium' },
+};
+
+const resolveStatusKey = (status) => {
+  if (!status) {
+    return 'UNKNOWN';
+  }
+
+  if (typeof status === 'string') {
+    return status.trim().toUpperCase();
+  }
+
+  if (typeof status === 'object') {
+    if (typeof status.name === 'string') {
+      return status.name.trim().toUpperCase();
+    }
+
+    if (typeof status.value === 'string') {
+      return status.value.trim().toUpperCase();
+    }
+  }
+
+  return 'UNKNOWN';
+};
+
 const UserTable = ({ users, onLockUser, pagination, onTableChange, loading: tableLoading }) => {
   const columns = [
     { title: 'Họ và tên', dataIndex: 'username', render: (_, record) => record.username || record.name || '-' },
@@ -9,27 +38,29 @@ const UserTable = ({ users, onLockUser, pagination, onTableChange, loading: tabl
     { title: 'Ngày tạo', dataIndex: 'createdAt', render: (text) => new Date(text).toLocaleDateString() },
     {
       title: 'Trạng thái',
-      dataIndex: 'activate',
-      render: (text, record) => {
-        const value = typeof record.activate !== 'undefined' ? record.activate : text;
-        const isActive =
-          value === true || value === 'true' || value === 1 || value === '1' || String(value).toLowerCase() === 'active' || String(value).toLowerCase() === 'activated';
-        return (
-          <span className={isActive ? 'text-teal-500 font-medium' : 'text-red-500 font-medium'}>
-            {isActive ? 'Đã xác thực' : 'Chưa xác thực'}
-          </span>
-        );
+      dataIndex: 'status',
+      render: (value) => {
+        const statusKey = resolveStatusKey(value);
+        const status = statusLabels[statusKey] || statusLabels.UNKNOWN;
+        return <span className={status.className}>{status.text}</span>;
       },
     },
     {
       title: 'Hành động',
       dataIndex: '',
       key: 'x',
-      render: (_, record) => (
-        <Button type="primary" danger onClick={() => onLockUser(record.id)}>
-          Ban
-        </Button>
-      ),
+      render: (_, record) => {
+        const isBanned = resolveStatusKey(record.status) === 'BANNED';
+        return (
+          <Button
+            type="primary"
+            danger={!isBanned}
+            onClick={() => onLockUser(record)}
+          >
+            {isBanned ? 'Bỏ chặn' : 'Chặn'}
+          </Button>
+        );
+      },
     },
   ];
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
@@ -45,7 +76,6 @@ const UserTable = ({ users, onLockUser, pagination, onTableChange, loading: tabl
   };
 
   const onSelectChange = newSelectedRowKeys => {
-    console.log('selectedRowKeys changed: ', newSelectedRowKeys);
     setSelectedRowKeys(newSelectedRowKeys);
   };
   const rowSelection = {
@@ -87,4 +117,3 @@ const UserTable = ({ users, onLockUser, pagination, onTableChange, loading: tabl
 }
 
 export default UserTable;
-

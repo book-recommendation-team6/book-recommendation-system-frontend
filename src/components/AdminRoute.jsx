@@ -29,7 +29,8 @@ const AdminRoute = ({ children }) => {
   }
 
   // Check if user has ADMIN role
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin';
+  const roleName = typeof user?.role === 'string' ? user.role : user?.role?.name;
+  const isAdmin = roleName?.toUpperCase() === 'ADMIN' || user?.isAdmin;
   console.log("🔍 AdminRoute - Is Admin:", isAdmin);
 
   // Redirect non-admin users to home page (they shouldn't access admin area)

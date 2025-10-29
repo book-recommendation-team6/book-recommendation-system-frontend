@@ -80,3 +80,14 @@ export const updateBook = async (bookId, payload) => {
     throw error;
   }
 };
+
+export const deleteBook = async (bookId) => {
+  try {
+    const response = await api.delete(`/admin/books/delete/${bookId}`);
+    console.log("Delete book response:", response);
+    return response;
+  } catch (error) {
+    console.error("Delete book failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
