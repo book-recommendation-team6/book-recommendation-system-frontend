@@ -281,11 +281,13 @@ export default function EpubCoreViewer({ onBack }) {
         }
         setTotalPages(total);
 
-        await rendition.display(currentCfi || undefined);
+        // Lấy CFI đã lưu từ localStorage
+        const savedCfi = localStorage.getItem(posStorageKey);
+        await rendition.display(savedCfi || undefined);
 
         if (locations?.locationFromCfi) {
           try {
-            const idx = currentCfi ? locations.locationFromCfi(currentCfi) : 0;
+            const idx = savedCfi ? locations.locationFromCfi(savedCfi) : 0;
             if (typeof idx === "number" && Number.isFinite(idx)) {
               setPage(idx + 1);
               if (total > 0) {
@@ -367,7 +369,7 @@ export default function EpubCoreViewer({ onBack }) {
         epubBook.destroy();
       } catch {}
     };
-  }, [src, currentCfi, saveCFI, syncProgress, bookId, computeProgress]);
+  }, [src, bookId]);
 
   
   // Actions
