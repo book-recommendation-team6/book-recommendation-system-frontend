@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect} from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import AdminLayout from "../../layout/AdminLayout"
 import SearchBar from "../../components/admin/SearchBar"
@@ -7,7 +7,7 @@ import BookTable from "../../components/admin/BookTable"
 import { Button, Modal, message } from "antd"
 import { Plus } from "lucide-react"
 import { PATHS } from "../../constant/routePath"
-import {getBooks} from "../../services/manageBookService"
+import { getBooks, searchBooks, deleteBook as deleteBookApi } from "../../services/manageBookService"
 
 // const mockBooks = Array.from({ length: 10 }, (_, i) => ({
 //   id: i + 1,
@@ -30,20 +30,25 @@ const AdminBooks = () => {
   const [loading, setLoading] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [bookToDelete, setBookToDelete] = useState(null)
+  const searchInitialized = useRef(false)
 
-  const fetchBooks = async (page = 0, size = 10) => {
+  const fetchBooks = async (page = 0, size = pagination.pageSize, keyword = "") => {
     setLoading(true)
     try {
-      const response = await getBooks(page, size);
+      const trimmedKeyword = (keyword ?? "").trim()
+      const response = trimmedKeyword
+        ? await searchBooks(trimmedKeyword, page, size)
+        : await getBooks(page, size);
       console.log("Fetched books:", response);
       
-      // Handle response structure from backend
-      const content = response.data?.content || response.content || [];
-      const total = response.data?.totalElements || response.totalElements || 0;
+      const data = response.data || response;
+      const content = data?.content || [];
+      const total = data?.totalElements || 0;
       
       setBookData(content);
       setPagination(prev => ({
         ...prev,
+        pageSize: size,
         total,
         current: page + 1, // AntD uses 1-based, backend uses 0-based
       }));
@@ -60,11 +65,24 @@ const AdminBooks = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!searchInitialized.current) {
+      searchInitialized.current = true;
+      return;
+    }
+
+    const handler = setTimeout(() => {
+      fetchBooks(0, pagination.pageSize, searchQuery);
+    }, 400);
+
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
   const handleTableChange = (paginationConfig) => {
     const page = paginationConfig.current - 1; // Convert to 0-based
     const size = paginationConfig.pageSize;
-    setPagination(paginationConfig);
-    fetchBooks(page, size);
+    fetchBooks(page, size, searchQuery);
   }
 
   const handleSearch = (query) => {
@@ -86,10 +104,21 @@ const AdminBooks = () => {
 
   const confirmDelete = async () => {
     try {
-      // TODO: Add API call to delete book
-      // await deleteBookAPI(bookToDelete);
-      console.log("Delete book:", bookToDelete)
+      if (!bookToDelete) return;
+
+      await deleteBookApi(bookToDelete);
       message.success("Xóa sách thành công!")
+
+      const totalAfterDelete = Math.max(0, pagination.total - 1);
+      const maxPageIndex = Math.max(
+        0,
+        Math.ceil(totalAfterDelete / pagination.pageSize) - 1,
+      );
+      const currentPageIndex = Math.max(0, pagination.current - 1);
+      const nextPage = Math.min(currentPageIndex, maxPageIndex);
+
+      await fetchBooks(nextPage, pagination.pageSize, searchQuery);
+
       setIsDeleteModalOpen(false)
       setBookToDelete(null)
     } catch (error) {
@@ -102,15 +131,6 @@ const AdminBooks = () => {
     setIsDeleteModalOpen(false)
     setBookToDelete(null)
   }
-
-  const filteredBooks = bookData.filter(
-    (book) =>
-      book.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.authors?.some(author => 
-        author.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      ) ||
-      book.publisher?.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
 
   const paginationConfig = {
     ...pagination,
@@ -137,7 +157,7 @@ const AdminBooks = () => {
         </div>
 
         <BookTable 
-          books={filteredBooks} 
+          books={bookData} 
           onEdit={handleEditBook} 
           onDelete={handleDeleteBook}
           pagination={paginationConfig}

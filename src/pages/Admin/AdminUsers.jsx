@@ -1,9 +1,27 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import AdminLayout from "../../layout/AdminLayout"
 import SearchBar from "../../components/admin/SearchBar"
 import UserTable from "../../components/admin/UserTable"
 import { Modal, message } from "antd"
-import { getUser } from "../../services/manageUserService"
+import { getUser, banUser, unbanUser } from "../../services/manageUserService"
+
+const normalizeStatus = (status) => {
+  if (!status) {
+    return 'UNKNOWN';
+  }
+  if (typeof status === 'string') {
+    return status.trim().toUpperCase();
+  }
+  if (typeof status === 'object') {
+    if (typeof status.name === 'string') {
+      return status.name.trim().toUpperCase();
+    }
+    if (typeof status.value === 'string') {
+      return status.value.trim().toUpperCase();
+    }
+  }
+  return 'UNKNOWN';
+};
 
 const AdminUsers = () => {
   const [searchQuery, setSearchQuery] = useState("")
@@ -14,27 +32,31 @@ const AdminUsers = () => {
     total: 0,
   })
   const [loading, setLoading] = useState(false)
+  const searchInitialized = useRef(false)
 
-  console.log("AdminUsers rendered. Current users:", users);
-  const fetchUsers = async (page = 0, size = 10) => {
+  const fetchUsers = async (page = 0, size = pagination.pageSize, keyword = "") => {
     setLoading(true)
     try {
-      const response = await getUser(page, size);
-      console.log("Fetched users:", response);
-      
-      // Assuming backend returns { data: { content: [...], totalElements: N } }
-      const content = response.data?.content || response.content || [];
-      const total = response.data?.totalElements || response.totalElements || 0;
-      
-      setUsers(content);
+      const response = await getUser(page, size, keyword)
+      const data = response.data || response
+      const content = data?.content || []
+      const total = data?.totalElements || 0
+
+      const normalizedContent = content.map(user => ({
+        ...user,
+        status: normalizeStatus(user.status),
+      }))
+
+      setUsers(normalizedContent)
       setPagination(prev => ({
         ...prev,
+        pageSize: size,
         total,
         current: page + 1, // AntD uses 1-based, backend uses 0-based
-      }));
+      }))
     } catch (error) {
-      console.error("Error fetching users:", error);
-      message.error("Không thể tải danh sách người dùng");
+      console.error("Error fetching users:", error)
+      message.error("Không thể tải danh sách người dùng")
     } finally {
       setLoading(false)
     }
@@ -45,48 +67,62 @@ const AdminUsers = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!searchInitialized.current) {
+      searchInitialized.current = true;
+      return;
+    }
+
+    const handler = setTimeout(() => {
+      fetchUsers(0, pagination.pageSize, searchQuery)
+    }, 400)
+
+    return () => clearTimeout(handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery])
+
   // Handle table change (pagination, filters, sorter)
   const handleTableChange = (paginationConfig) => {
-    const page = paginationConfig.current - 1; // Convert to 0-based
-    const size = paginationConfig.pageSize;
-    setPagination(paginationConfig);
-    fetchUsers(page, size);
+    const page = paginationConfig.current - 1 // Convert to 0-based
+    const size = paginationConfig.pageSize
+    fetchUsers(page, size, searchQuery)
   }
 
   const [isBanModalOpen, setIsBanModalOpen] = useState(false)
-  const [userToBan, setUserToBan] = useState(null)
+  const [selectedUser, setSelectedUser] = useState(null)
 
   // Handle lock user action
-  const handleLockUser = (userId) => {
-    setUserToBan(userId)
+  const handleLockUser = (user) => {
+    setSelectedUser(user)
     setIsBanModalOpen(true)
   }
 
   const confirmBan = async () => {
+    if (!selectedUser) {
+      return
+    }
+
     try {
-      // await banUserAPI(userToBan);
-      console.log("Ban user:", userToBan)
-      message.success("Chặn người dùng thành công!")
+      if (selectedUser.status === "BANNED") {
+        await unbanUser(selectedUser.id)
+        message.success("Bỏ chặn người dùng thành công!")
+      } else {
+        await banUser(selectedUser.id)
+        message.success("Chặn người dùng thành công!")
+      }
       setIsBanModalOpen(false)
-      setUserToBan(null)
+      setSelectedUser(null)
+      fetchUsers(pagination.current - 1, pagination.pageSize, searchQuery)
     } catch (error) {
-      message.error("Chặn người dùng thất bại!")
-      console.error("Error banning user:", error)
+      message.error("Cập nhật trạng thái người dùng thất bại!")
+      console.error("Error updating user status:", error)
     }
   }
 
   const cancelBan = () => {
     setIsBanModalOpen(false)
-    setUserToBan(null)
+    setSelectedUser(null)
   }
-
-  // Filter users based on search query
-  const filteredUsers = users.filter(
-    (user) =>
-      user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.id?.toString().includes(searchQuery),
-  )
 
   // Pagination configuration for UserTable
   const paginationConfig = {
@@ -101,8 +137,8 @@ const AdminUsers = () => {
       <div className="space-y-6">
         <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Tìm kiếm..." />
         <UserTable 
-          users={filteredUsers} 
-          onLockUser={handleLockUser} 
+          users={users}
+          onLockUser={handleLockUser}
           pagination={paginationConfig}
           onTableChange={handleTableChange}
           loading={loading}
@@ -110,16 +146,20 @@ const AdminUsers = () => {
       </div>
 
       <Modal
-        title="Chặn người dùng"
+        title={selectedUser?.status === "BANNED" ? "Bỏ chặn người dùng" : "Chặn người dùng"}
         open={isBanModalOpen}
         onOk={confirmBan}
         onCancel={cancelBan}
         okText="Có"
         cancelText="Không"
-        okButtonProps={{ danger: true }}
+        okButtonProps={selectedUser?.status === "BANNED" ? {} : { danger: true }}
         centered
       >
-        <p>Bạn muốn chặn người dùng này?</p>
+        <p>
+          {selectedUser?.status === "BANNED"
+            ? "Bạn muốn bỏ chặn người dùng này?"
+            : "Bạn muốn chặn người dùng này?"}
+        </p>
       </Modal>
     </AdminLayout>
   )

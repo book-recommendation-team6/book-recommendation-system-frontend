@@ -2,43 +2,108 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import ePub from "epubjs";
 
-import {ChevronLeft, ChevronRight, Bookmark, BookmarkCheck} from "lucide-react";
+import { ChevronLeft, ChevronRight, Bookmark, BookmarkCheck } from "lucide-react";
 
 import SidePanel from "./SidePanel";
 import { AnimatePresence } from "framer-motion";
-import useTheme from "../../hook/useTheme"; 
+import useTheme from "../../hook/useTheme";
+import useAuth from "../../hook/useAuth";
 
 import { useLocation } from "react-router-dom";
+import { recordReadingHistory } from "../../services/historyService";
 
-const LS_POS_KEY = "reader:cfi";
-const LS_BM_KEY = "reader:bookmarks";
+const DEFAULT_POS_KEY = "reader:cfi";
+const DEFAULT_BM_KEY = "reader:bookmarks";
 
 
 
-export default function EpubCoreViewer({
-  onBack,
-}) {
-
+export default function EpubCoreViewer({ onBack }) {
   const [theme, setTheme] = useTheme();
+  const locationState = useLocation();
+  const { user } = useAuth();
 
-  const {src} =  {src: "/"};
-  console.log("BookReader src:", src);
-  const resolveTheme = () => {
-    if (theme === 'dark') return 'dark';
-    if (theme === 'light') return 'light';
+  const { src = "", book = {} } = locationState.state || {};
+  const parsedBookId = typeof book?.id !== "undefined" ? Number(book.id) : null;
+  const bookId = Number.isFinite(parsedBookId) ? parsedBookId : null;
+
+  const storagePrefix = useMemo(() => {
+    return user?.id ? `reader:user:${user.id}` : "reader:guest";
+  }, [user?.id]);
+
+  const posStorageKey = useMemo(() => {
+    return bookId != null
+      ? `${storagePrefix}:cfi:${bookId}`
+      : `${storagePrefix}:${DEFAULT_POS_KEY}`;
+  }, [storagePrefix, bookId]);
+
+  const bmStorageKey = useMemo(() => {
+    return bookId != null
+      ? `${storagePrefix}:bookmarks:${bookId}`
+      : `${storagePrefix}:${DEFAULT_BM_KEY}`;
+  }, [storagePrefix, bookId]);
+
+  const [bookmarks, setBookmarks] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(bmStorageKey) || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  const [currentHref, setCurrentHref] = useState("");
+
+  // Book info + location
+  const [meta, setMeta] = useState({ title: book?.title || "", author: "" });
+  const [toc, setToc] = useState([]);
+  const [totalPages, setTotalPages] = useState(0); // dựa trên locations
+  const [page, setPage] = useState(1); // trang hiện tại (1-based)
+  const [currentCfi, setCurrentCfi] = useState(() => localStorage.getItem(posStorageKey) || null);
+  const [chapterTitle, setChapterTitle] = useState("");
+
+  const resolveTheme = useCallback(() => {
+    if (theme === "dark") return "dark";
+    if (theme === "light") return "light";
     // system: nhìn class .dark trên <html> do hook đã set
-    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-  };
+    return document.documentElement.classList.contains("dark") ? "dark" : "light";
+  }, [theme]);
+
+  const themeRef = useRef(resolveTheme());
+
+  useEffect(() => {
+    themeRef.current = resolveTheme();
+  }, [resolveTheme]);
+
+  const handleGoBack = useCallback(() => {
+    if (typeof onBack === "function") {
+      onBack();
+      return;
+    }
+    window.history.back();
+  }, [onBack]);
 
   useEffect(() => {
     const r = renditionRef.current;
     if (!r) return;
     const apply = () => r.themes.select(resolveTheme());
 
-    apply();                 // ⟵ áp ngay khi theme đổi
+    apply(); // ⟵ áp ngay khi theme đổi
     r.on("rendered", apply); // ⟵ áp lại sau mỗi lần render trang
     return () => r.off("rendered", apply);
-  }, [theme]);
+  }, [resolveTheme]);
+
+  useEffect(() => {
+    try {
+      const savedBookmarks = JSON.parse(localStorage.getItem(bmStorageKey) || "[]");
+      setBookmarks(Array.isArray(savedBookmarks) ? savedBookmarks : []);
+    } catch {
+      setBookmarks([]);
+    }
+  }, [bmStorageKey]);
+
+  useEffect(() => {
+    const savedCfi = localStorage.getItem(posStorageKey);
+    setCurrentCfi(savedCfi || null);
+  }, [posStorageKey]);
 
   // Refs to epub.js objects
   const viewerRef = useRef(null);
@@ -53,26 +118,6 @@ export default function EpubCoreViewer({
   const [panelOpen, setPanelOpen] = useState(false); // thay cho tocOpen
   const [panelTab, setPanelTab] = useState("toc"); // "toc" | "bm"
   const [editingBmId, setEditingBmId] = useState(null); // id đang sửa
-
-  const [bookmarks, setBookmarks] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(LS_BM_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  });
-
-  const [currentHref, setCurrentHref] = useState("");
-
-  // Book info + location
-  const [meta, setMeta] = useState({ title: "", author: "" });
-  const [toc, setToc] = useState([]);
-  const [totalPages, setTotalPages] = useState(0); // dựa trên locations
-  const [page, setPage] = useState(1); // trang hiện tại (1-based)
-  const [location, setLocation] = useState(
-    () => localStorage.getItem(LS_POS_KEY) || null
-  );
-  const [chapterTitle, setChapterTitle] = useState("");
 
   // tiện truy cập nhanh id->item của TOC
   const tocByHref = useMemo(() => {
@@ -89,8 +134,72 @@ export default function EpubCoreViewer({
 
   const saveCFI = useCallback((cfi) => {
     if (!cfi) return;
-    setLocation(cfi);
-    localStorage.setItem(LS_POS_KEY, cfi);
+    setCurrentCfi(cfi);
+    try {
+      localStorage.setItem(posStorageKey, cfi);
+    } catch (err) {
+      console.error("Failed to persist reading position:", err);
+    }
+  }, [posStorageKey]);
+
+  const lastProgressRef = useRef({ value: null, time: 0 });
+
+  const recordHistory = useCallback(
+    async (progressValue) => {
+      if (!user?.id || bookId == null) return;
+      const numericProgress = Number(progressValue);
+      if (!Number.isFinite(numericProgress)) return;
+      const normalized = Math.max(0, Math.min(100, numericProgress));
+      try {
+        await recordReadingHistory(user.id, bookId, { progress: normalized });
+      } catch (err) {
+        console.error("Failed to record reading history:", err);
+      }
+    },
+    [bookId, user?.id],
+  );
+
+  const syncProgress = useCallback(
+    (progressValue, force = false) => {
+      if (!user?.id || bookId == null) return;
+      const numericProgress = Number(progressValue);
+      if (!Number.isFinite(numericProgress)) return;
+      const normalized = Math.max(0, Math.min(100, numericProgress));
+      const now = Date.now();
+      const last = lastProgressRef.current;
+      const progressDiff = last.value === null ? normalized : Math.abs(normalized - last.value);
+      const timeDiff = now - (last.time ?? 0);
+
+      if (!force && last.value !== null && progressDiff < 3 && timeDiff < 15000) {
+        return;
+      }
+
+      lastProgressRef.current = { value: normalized, time: now };
+      recordHistory(normalized);
+    },
+    [bookId, recordHistory, user?.id],
+  );
+
+  useEffect(() => {
+    lastProgressRef.current = { value: null, time: 0 };
+  }, [bookId, user?.id]);
+
+  useEffect(() => {
+    return () => {
+      const lastValue = lastProgressRef.current.value;
+      if (lastValue == null) return;
+      recordHistory(lastValue);
+    };
+  }, [recordHistory]);
+
+  const computeProgress = useCallback((index, total) => {
+    if (!Number.isFinite(index) || !Number.isFinite(total) || total <= 0) {
+      return 0;
+    }
+    if (total === 1) {
+      return 100;
+    }
+    return Math.max(0, Math.min(100, (index / (total - 1)) * 100));
   }, []);
 
   // init
@@ -98,21 +207,25 @@ export default function EpubCoreViewer({
     const container = viewerRef.current;
     if (!container) return;
 
+    if (!src) {
+      setError("Không tìm thấy nguồn sách để đọc.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError("");
-    const book = ePub(src);
-    bookRef.current = book;
+    const epubBook = ePub(src);
+    bookRef.current = epubBook;
 
-    const rendition = book.renderTo(container, {
+    const rendition = epubBook.renderTo(container, {
       width: "100%",
       height: "100%",
-      flow: "paginated", // "scrolled" nếu muốn cuộn
+      flow: "paginated",
       manager: "default",
-      // allowScriptedContent: true, // bật nếu file cần JS
     });
     renditionRef.current = rendition;
 
-    // Themes
     rendition.themes.register("light", {
       body: {
         background: "#ffffff",
@@ -136,36 +249,62 @@ export default function EpubCoreViewer({
       h1: { fontWeight: "700", letterSpacing: "0.02em" },
       "p, li": { margin: "0 0 1em" },
     });
-    rendition.themes.select(resolveTheme());
+    rendition.themes.select(themeRef.current);
     rendition.themes.fontSize("110%");
 
-    // Meta + TOC + Locations (đếm trang)
+    const toTotalLocations = () => {
+      const locations = bookRef.current?.locations;
+      if (!locations) return 0;
+      if (typeof locations.length === "function") return locations.length();
+      if (typeof locations.length === "number") return locations.length;
+      return 0;
+    };
+
     (async () => {
       try {
-        await book.ready;
-        await book.locations.generate(1024);
-        const { title, creator } = book.package?.metadata || {};
-        setMeta({ title: title || "", author: creator || "" });
+        await epubBook.ready;
+        await epubBook.locations.generate(1024);
+        const { title, creator } = epubBook.package?.metadata || {};
+        setMeta({ title: title || book?.title || "", author: creator || "" });
 
-        const nav = await book.loaded.navigation;
+        const nav = await epubBook.loaded.navigation;
         setToc(nav?.toc || []);
 
-        // generate "locations" để có số trang ước lượng ổn định
-        // Mặc định 1000 chữ / location; bạn có thể tinh chỉnh để “20 trang” như mock
-        //   await book.locations.generate(1024);
+        const locations = epubBook.locations;
         let total = 0;
-        if (book.locations) {
-          if (typeof book.locations.length === "function") {
-            total = book.locations.length(); // đa số bản dùng length()
-          } else if (typeof book.locations.length === "number") {
-            total = book.locations.length; // một số build gắn length là số
+        if (locations) {
+          if (typeof locations.length === "function") {
+            total = locations.length();
+          } else if (typeof locations.length === "number") {
+            total = locations.length;
           }
         }
         setTotalPages(total);
 
-        // display vị trí hiện tại (hoặc đầu sách)
-        await rendition.display(location || undefined);
-        // Khi frame đầu render xong, tắt loading
+        await rendition.display(currentCfi || undefined);
+
+        if (locations?.locationFromCfi) {
+          try {
+            const idx = currentCfi ? locations.locationFromCfi(currentCfi) : 0;
+            if (typeof idx === "number" && Number.isFinite(idx)) {
+              setPage(idx + 1);
+              if (total > 0) {
+                const progress = computeProgress(idx, total);
+                syncProgress(progress, true);
+              } else {
+                syncProgress(0, true);
+              }
+            } else {
+              syncProgress(0, true);
+            }
+          } catch (err) {
+            console.error("Failed to restore reading location:", err);
+            syncProgress(0, true);
+          }
+        } else {
+          syncProgress(0, true);
+        }
+
         const off = () => {
           setIsLoading(false);
           rendition.off("rendered", off);
@@ -178,48 +317,57 @@ export default function EpubCoreViewer({
       }
     })();
 
-    // cập nhật page/chapter khi relocate
     const onRelocated = (loc) => {
       const cfi = loc?.start?.cfi;
       if (cfi) saveCFI(cfi);
 
-      // cập nhật trang hiện tại (nếu đã generate locations)
-      if (bookRef.current?.locations?.locationFromCfi) {
-        const idx = bookRef.current.locations.locationFromCfi(cfi);
-        if (typeof idx === "number") setPage(idx + 1);
+      let locationIndex = null;
+      const locations = bookRef.current?.locations;
+      if (cfi && locations?.locationFromCfi) {
+        try {
+          const idx = locations.locationFromCfi(cfi);
+          if (typeof idx === "number" && Number.isFinite(idx)) {
+            locationIndex = idx;
+            setPage(idx + 1);
+          }
+        } catch (err) {
+          console.error("Failed to derive location index:", err);
+        }
       }
 
-      // lưu href cho highlight mục lục
+      const total = toTotalLocations();
+      if (total > 0 && locationIndex !== null) {
+        const progress = computeProgress(locationIndex, total);
+        syncProgress(progress);
+      }
+
       const href = loc?.start?.href?.split("#")[0] || "";
       setCurrentHref(href);
 
-      // cập nhật tiêu đề chương (như trước)
       const item = tocByHref[href];
       setChapterTitle(item?.label || "");
     };
 
     rendition.on("relocated", onRelocated);
 
-    // phím tắt
     const onKey = (e) => {
       if (e.key === "ArrowLeft") rendition.prev();
       if (e.key === "ArrowRight") rendition.next();
     };
     window.addEventListener("keydown", onKey);
 
-    // Resize khi khung thay đổi (div cha dùng h-screen)
     const onResize = () => rendition.resize("100%", "100%");
     window.addEventListener("resize", onResize);
 
     return () => {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", onResize);
+      rendition.off("relocated", onRelocated);
       try {
-        book.destroy();
+        epubBook.destroy();
       } catch {}
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, theme, saveCFI]); // đổi theme sẽ apply ngay lần init
+  }, [src, currentCfi, saveCFI, syncProgress, bookId, computeProgress]);
 
   
   // Actions
@@ -247,19 +395,19 @@ export default function EpubCoreViewer({
 
   // Bookmark
   const toggleBookmark = () => {
-    if (!location) return;
-    const exists = bookmarks.some((b) => b.cfi === location);
+    if (!currentCfi) return;
+    const exists = bookmarks.some((b) => b.cfi === currentCfi);
     let next;
-    if (exists) next = bookmarks.filter((b) => b.cfi !== location);
+    if (exists) next = bookmarks.filter((b) => b.cfi !== currentCfi);
     else {
       const id = Date.now().toString(36); //Tạo id để sửa/xóa dễ
       next = [
-        { id, cfi: location, note: chapterTitle || `Trang ${page}` },
+        { id, cfi: currentCfi, note: chapterTitle || `Trang ${page}` },
         ...bookmarks,
       ].slice(0, 100);
     }
     setBookmarks(next);
-    localStorage.setItem(LS_BM_KEY, JSON.stringify(next));
+    localStorage.setItem(bmStorageKey, JSON.stringify(next));
   };
 
   /** đổi tên bookmark */
@@ -268,7 +416,7 @@ export default function EpubCoreViewer({
       const next = prev.map((b) =>
         b.id === id ? { ...b, note: newText || b.note } : b
       );
-      localStorage.setItem(LS_BM_KEY, JSON.stringify(next));
+      localStorage.setItem(bmStorageKey, JSON.stringify(next));
       return next;
     });
     setEditingBmId(null);
@@ -278,7 +426,7 @@ export default function EpubCoreViewer({
   const removeBookmark = (id) => {
     setBookmarks((prev) => {
       const next = prev.filter((b) => b.id !== id);
-      localStorage.setItem(LS_BM_KEY, JSON.stringify(next));
+      localStorage.setItem(bmStorageKey, JSON.stringify(next));
       return next;
     });
   };
@@ -291,8 +439,8 @@ export default function EpubCoreViewer({
 
   // sau các useState khác
   const isBookmarked = useMemo(
-    () => !!location && bookmarks.some((b) => b.cfi === location),
-    [bookmarks, location]
+    () => !!currentCfi && bookmarks.some((b) => b.cfi === currentCfi),
+    [bookmarks, currentCfi]
   );
 
   return (
@@ -301,7 +449,7 @@ export default function EpubCoreViewer({
       <div className="fixed top-0 inset-x-0 z-20 h-14 bg-[#29292B] dark:bg-gray-600 text-gray-100 backdrop-blur flex items-center px-3">
         {/* Back */}
         <button
-          onClick={onBack}
+          onClick={handleGoBack}
           className="mr-2 px-2 py-1 rounded hover:bg-white/10"
           title="Quay lại"
         >

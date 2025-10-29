@@ -11,12 +11,15 @@ const AccountSidebar = React.memo(({ user, activeTab, onTabChange }) => {
     { id: "history-reading", label: "Lịch sử đọc sách", icon: History },
   ]
 
+  const avatarSrc = user?.avatarUrl || user?.avatar || ""
+  const displayName = user?.fullName || user?.username || user?.email || "Người dùng"
+
   return (
     <div className="md:col-span-1 h-full">
       <div className="p-4 sm:p-6 md:border-r h-full border-gray-200">
         <div className="text-center mb-4 sm:mb-6">
-          <UserAvatar src={user.avatar} alt={user.name} size="md" className="mx-auto mb-2 sm:mb-3" />
-          <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{user.name}</h3>
+          <UserAvatar src={avatarSrc} alt={displayName} size="md" className="mx-auto mb-2 sm:mb-3" />
+          <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{displayName}</h3>
         </div>
 
         <nav className="space-y-1 border-t pt-3 sm:pt-4">

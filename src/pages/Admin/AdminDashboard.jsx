@@ -1,3 +1,5 @@
+import { useEffect, useMemo, useState } from "react";
+import { message } from "antd";
 import AdminLayout from "../../layout/AdminLayout";
 import {
   ResponsiveContainer,
@@ -20,97 +22,108 @@ import {
 import ListCard from "./components/ListCard";
 import StatCard from "./components/StatCard";
 
-const data = [
-  { date: "10/8", value: 1900 },
-  { date: "11/8", value: 2600 },
-  { date: "12/8", value: 2000 },
-  { date: "13/8", value: 600 },
-  { date: "14/8", value: 2500 },
-  { date: "15/8", value: 1700 },
-  { date: "16/8", value: 1700 },
-];
+import { getAdminDashboard } from "../../services/dashboardService";
 
-const formatNumber = (n) => n.toLocaleString("en-US");
+const formatNumber = (value) => {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "0";
+  }
+  return value.toLocaleString("en-US");
+};
 
-// ===== Dummy data cho 2 bảng =====
-const topRatedBooks = [
-  {
-    id: 1,
-    title: "Jesse Thomas",
-    subtitle: "637 đánh giá",
-    cover: "https://picsum.photos/seed/book1/56/56",
-    score: 5.0,
-  },
-  {
-    id: 2,
-    title: "Thisal Mathiyazhagan",
-    subtitle: "600 đánh giá",
-    cover: "https://picsum.photos/seed/book2/56/56",
-    score: 5.0,
-  },
-  {
-    id: 3,
-    title: "Helen Chuang",
-    subtitle: "500 đánh giá",
-    cover: "https://picsum.photos/seed/book3/56/56",
-    score: 5.0,
-  },
-  {
-    id: 4,
-    title: "Thisal Mathiyazhagan",
-    subtitle: "350 đánh giá",
-    cover: "https://picsum.photos/seed/book4/56/56",
-    score: 5.0,
-  },
-  {
-    id: 5,
-    title: "Thisal Mathiyazhagan",
-    subtitle: "300 đánh giá",
-    cover: "https://picsum.photos/seed/book5/56/56",
-    score: 5.0,
-  },
-];
-
-const topFavoriteBooks = [
-  {
-    id: 11,
-    title: "Jesse Thomas",
-    subtitle: "637 lượt yêu thích",
-    cover: "https://picsum.photos/seed/book11/56/56",
-    score: 100,
-  },
-  {
-    id: 12,
-    title: "Thisal Mathiyazhagan",
-    subtitle: "600 lượt yêu thích",
-    cover: "https://picsum.photos/seed/book12/56/56",
-    score: 100,
-  },
-  {
-    id: 13,
-    title: "Helen Chuang",
-    subtitle: "500 lượt yêu thích",
-    cover: "https://picsum.photos/seed/book13/56/56",
-    score: 100,
-  },
-  {
-    id: 14,
-    title: "Thisal Mathiyazhagan",
-    subtitle: "350 lượt yêu thích",
-    cover: "https://picsum.photos/seed/book14/56/56",
-    score: 100,
-  },
-  {
-    id: 15,
-    title: "Thisal Mathiyazhagan",
-    subtitle: "300 lượt yêu thích",
-    cover: "https://picsum.photos/seed/book15/56/56",
-    score: 100,
-  },
-];
-
+const formatDateLabel = (dateString) => {
+  if (!dateString) return "";
+  const parts = dateString.split("-");
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}`;
+  }
+  return dateString;
+};
 
 const AdminDashboard = () => {
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        const { dashboard } = await getAdminDashboard();
+        setDashboard(dashboard);
+      } catch (error) {
+        console.error("Load dashboard failed:", error);
+        message.error("Không thể tải dữ liệu thống kê!");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const stats = useMemo(
+    () => [
+      {
+        icon: Users,
+        label: "Tổng số người đọc",
+        value: dashboard?.totalUsers ?? 0,
+      },
+      {
+        icon: BookOpen,
+        label: "Tổng số sách",
+        value: dashboard?.totalBooks ?? 0,
+      },
+      {
+        icon: Layers,
+        label: "Tổng số thể loại",
+        value: dashboard?.totalGenres ?? 0,
+      },
+      {
+        icon: PenSquare,
+        label: "Tổng số tác giả",
+        value: dashboard?.totalAuthors ?? 0,
+      },
+    ],
+    [dashboard],
+  );
+
+  const chartData = useMemo(
+    () =>
+      (dashboard?.newUsersLast7Days ?? []).map((item) => ({
+        date: formatDateLabel(item.date),
+        value: item.count ?? 0,
+      })),
+    [dashboard],
+  );
+
+  const topRatedBooks = useMemo(
+    () =>
+      (dashboard?.topRatedBooks?.content ?? []).map((book) => ({
+        id: book.id,
+        title: book.title,
+        subtitle: `${formatNumber(book.ratingCount ?? 0)} đánh giá`,
+        cover: book.coverImageUrl
+          ? book.coverImageUrl
+          : "https://via.placeholder.com/56x56?text=Book",
+        score: Number(book.averageRating ?? 0),
+      })),
+    [dashboard],
+  );
+
+  const topFavoriteBooks = useMemo(
+    () =>
+      (dashboard?.topFavoritedBooks?.content ?? []).map((book) => ({
+        id: book.id,
+        title: book.title,
+        subtitle: `${formatNumber(book.favoriteCount ?? 0)} lượt yêu thích`,
+        cover: book.coverImageUrl
+          ? book.coverImageUrl
+          : "https://via.placeholder.com/56x56?text=Book",
+        score: Number(book.favoriteCount ?? 0),
+      })),
+    [dashboard],
+  );
+
   return (
     <AdminLayout title="ADMIN">
       <div className="rounded-3xl p-6 md:p-8 bg-[#F4F7FF] dark:bg-slate-950/30">
@@ -121,10 +134,15 @@ const AdminDashboard = () => {
         {/* Hàng 1: 4 ô thống kê + chart */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
           <div className="grid grid-cols-2 grid-rows-2 auto-rows-fr col-span-2 gap-6 h-full">
-            <StatCard icon={Users} label="Tổng số người đọc" value={1000} />
-            <StatCard icon={BookOpen} label="Tổng số sách" value={900} />
-            <StatCard icon={Layers} label="Tổng số danh mục" value={42} />
-            <StatCard icon={PenSquare} label="Tổng số tác giả" value={120} />
+            {stats.map((stat) => (
+              <StatCard
+                key={stat.label}
+                icon={stat.icon}
+                label={stat.label}
+                value={stat.value}
+                isLoading={loading}
+              />
+            ))}
           </div>
 
           <div className="lg:col-span-2 h-full">
@@ -135,7 +153,7 @@ const AdminDashboard = () => {
               <div className="h-56 md:h-64 rounded-2xl bg-[#F3F6FF] dark:bg-slate-800 p-3 md:p-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={data}
+                    data={chartData.length ? chartData : [{ date: "", value: 0 }]}
                     margin={{ top: 24, right: 12, left: 8, bottom: 0 }}
                     barCategoryGap={24}
                   >
@@ -198,12 +216,14 @@ const AdminDashboard = () => {
             subtitle="Các đầu sách được đánh giá cao nhất:"
             items={topRatedBooks}
             variant="rating"
+            isLoading={loading}
           />
           <ListCard
             title="Top sách được yêu thích nhất"
             subtitle="Các đầu sách được yêu thích nhất:"
             items={topFavoriteBooks}
             variant="favorite"
+            isLoading={loading}
           />
         </div>
       </div>

@@ -25,7 +25,6 @@ import AdminEditBook from "./pages/Admin/AdminEditbook"
 
 import Upload from "./pages/Upload.jsx"
 
-import BookReader from "./pages/BookReader.jsx"
 import EpubCoreViewer from "./pages/BookReader/BookReader.jsx"
 function App() {
   return (

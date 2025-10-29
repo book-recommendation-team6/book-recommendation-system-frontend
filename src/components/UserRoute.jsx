@@ -22,7 +22,8 @@ const UserRoute = ({ children }) => {
 
   // If user is authenticated, check if they are admin
   if (isAuthenticated) {
-    const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin';
+    const roleName = typeof user?.role === 'string' ? user.role : user?.role?.name;
+    const isAdmin = roleName?.toUpperCase() === 'ADMIN' || user?.isAdmin;
     console.log("🔍 UserRoute - Is Admin:", isAdmin);
     
     if (isAdmin) {

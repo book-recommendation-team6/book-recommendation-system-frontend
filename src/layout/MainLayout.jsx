@@ -4,7 +4,15 @@ import Footer from '../components/Footer';
 import AuthModal from '../components/AuthModal';
 import useAuth from '../hook/useAuth';
 
-const MainLayout = ({ children, showHero = false, heroContent = null }) => {
+const MainLayout = ({
+  children,
+  showHero = false,
+  heroContent = null,
+  searchValue,
+  onSearchChange,
+  onSearchSubmit,
+  onGenreSelect,
+}) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register' or 'forgot' or 'confirm'
   const { user } = useAuth();
@@ -18,7 +26,14 @@ const MainLayout = ({ children, showHero = false, heroContent = null }) => {
 
   return (
     <div className="min-h-screen bg-background dark:bg-gray-900 flex flex-col">
-      <Header onAuthClick={openAuthModal} user={user} />
+      <Header
+        onAuthClick={openAuthModal}
+        user={user}
+        searchValue={searchValue}
+        onSearchChange={onSearchChange}
+        onSearchSubmit={onSearchSubmit}
+        onGenreSelect={onGenreSelect}
+      />
       {showHero && heroContent}
       <main className="flex-1 max-w-7xl mx-auto mt-5 w-full">{children}</main>
       <Footer />

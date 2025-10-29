@@ -9,7 +9,8 @@ import {
 import { Camera, File } from "lucide-react";
 import AdminLayout from "../../layout/AdminLayout";
 import { PATHS } from "../../constant/routePath";
-import { getBookDetail, getGenres, updateBook } from "../../services/manageBookService";
+import { getBookDetail, updateBook } from "../../services/manageBookService";
+import { getGenres } from "../../services/genreService";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -21,7 +22,8 @@ const AdminEditbook = () => {
   const [coverPreview, setCoverPreview] = useState(null);
   const [initialCoverUrl, setInitialCoverUrl] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
-  const [bookFile, setBookFile] = useState(null);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [epubFile, setEpubFile] = useState(null);
   const [existingFormats, setExistingFormats] = useState([]);
   const [genreOptions, setGenreOptions] = useState([]);
   const [genresLoading, setGenresLoading] = useState(false);
@@ -33,11 +35,11 @@ const AdminEditbook = () => {
       setLoading(true);
       setGenresLoading(true);
       try {
-        const [genres, book] = await Promise.all([
-          getGenres().catch((error) => {
+        const [{ genres }, book] = await Promise.all([
+          getGenres({ size: 100 }).catch((error) => {
             message.error("Không thể tải danh sách thể loại!");
             console.error("Error loading genres:", error);
-            return [];
+            return { genres: [] };
           }),
           getBookDetail(id),
         ]);
@@ -102,14 +104,10 @@ const AdminEditbook = () => {
     return false;
   };
 
-  const handleBookFileUpload = (file) => {
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
-    if (!allowedTypes.includes(file.type)) {
-      message.error("Chỉ được tải lên file pdf, doc, docx!");
+  const handlePdfUpload = (file) => {
+    const isPdf = file.type === "application/pdf" || file.name?.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      message.error("Chỉ được tải lên file PDF!");
       return false;
     }
     const isLt25M = file.size / 1024 / 1024 < 25;
@@ -118,12 +116,35 @@ const AdminEditbook = () => {
       return false;
     }
 
-    setBookFile(file);
+    setPdfFile(file);
     return false;
   };
 
-  const handleRemoveBookFile = () => {
-    setBookFile(null);
+  const handleEpubUpload = (file) => {
+    const isEpub =
+      file.type === "application/epub+zip" ||
+      file.type === "application/octet-stream" ||
+      file.name?.toLowerCase().endsWith(".epub");
+    if (!isEpub) {
+      message.error("Chỉ được tải lên file EPUB!");
+      return false;
+    }
+    const isLt25M = file.size / 1024 / 1024 < 25;
+    if (!isLt25M) {
+      message.error("File phải nhỏ hơn 25MB!");
+      return false;
+    }
+
+    setEpubFile(file);
+    return false;
+  };
+
+  const handleRemovePdfFile = () => {
+    setPdfFile(null);
+  };
+
+  const handleRemoveEpubFile = () => {
+    setEpubFile(null);
   };
 
   const handleRemoveCoverImage = () => {
@@ -166,8 +187,12 @@ const AdminEditbook = () => {
       formData.append("cover", coverFile);
     }
 
-    if (bookFile) {
-      formData.append("file", bookFile);
+    if (pdfFile) {
+      formData.append("pdfFile", pdfFile);
+    }
+
+    if (epubFile) {
+      formData.append("epubFile", epubFile);
     }
 
     setSubmitting(true);
@@ -358,73 +383,147 @@ const AdminEditbook = () => {
 
               {/* Book File Upload */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Tải sách lên
+                <div className="space-y-4">
+                  <label className="block text-gray-700 font-medium">
+                    Tải sách (PDF)
                   </label>
-                   <ConfigProvider
-                      theme={{
-                        components: {
-                          Upload: {
-                            colorFillAlter: "#accee72b",
-                            controlOutline: "rgba(241, 163, 99, 0.25)",
-                          },
+                  <ConfigProvider
+                    theme={{
+                      components: {
+                        Upload: {
+                          colorFillAlter: "#accee72b",
+                          controlOutline: "rgba(241, 163, 99, 0.25)",
                         },
-                      }}
-                    >
-                  <Upload.Dragger
-                    beforeUpload={handleBookFileUpload}
-                    showUploadList={false}
+                      },
+                    }}
                   >
-                    <div className="py-8">
-                      <p className="text-gray-600 mb-2">
-                        Kéo thả file hoặc chọn
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        Format: pdf, docx, doc & Max file size: 25 MB
-                      </p>
-                    </div>
-                  </Upload.Dragger>
-                  </ConfigProvider>
-                </div>
-
-                {bookFile && (
-                  <div className="mt-6 flex items-center justify-between bg-blue-50 p-3 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <span className="text-blue-600 text-2xl"><File /></span>
-                      <span className="text-gray-700">{bookFile.name}</span>
-                    </div>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={handleRemoveBookFile}
-                    />
-                  </div>
-                )}
-                {!bookFile && existingFormats.length > 0 && (
-                  <div className="mt-6 bg-gray-50 p-3 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <span className="text-blue-600 text-2xl"><File /></span>
-                      <div>
-                        <p className="text-gray-700 font-medium">
-                          {existingFormats[0]?.typeName || "Định dạng hiện có"}
+                    <Upload.Dragger
+                      beforeUpload={handlePdfUpload}
+                      showUploadList={false}
+                    >
+                      <div className="py-8">
+                        <p className="text-gray-600 mb-2">
+                          Kéo thả file hoặc chọn
                         </p>
-                        <p className="text-gray-500 text-sm">
-                          {existingFormats[0]?.fileSizeKb
-                            ? `${existingFormats[0].fileSizeKb} KB`
-                            : "File đã được tải lên"}
+                        <p className="text-gray-400 text-sm">
+                          Format: pdf &amp; Max file size: 25 MB
                         </p>
                       </div>
+                    </Upload.Dragger>
+                  </ConfigProvider>
+
+                  {pdfFile ? (
+                    <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600 text-2xl">
+                          <File />
+                        </span>
+                        <span className="text-gray-700">{pdfFile.name}</span>
+                      </div>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={handleRemovePdfFile}
+                      />
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    existingFormats
+                      .filter((format) => format.typeName?.toUpperCase() === "PDF")
+                      .map((format) => (
+                        <div
+                          key={format.id}
+                          className="bg-gray-50 p-3 rounded-lg flex items-center gap-2"
+                        >
+                          <span className="text-blue-600 text-2xl">
+                            <File />
+                          </span>
+                          <div>
+                            <p className="text-gray-700 font-medium">
+                              {format.typeName || "Định dạng hiện có"}
+                            </p>
+                            <p className="text-gray-500 text-sm">
+                              {format.fileSizeKb ? `${format.fileSizeKb} KB` : "File đã được tải lên"}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <label className="block text-gray-700 font-medium">
+                    Tải sách (EPUB)
+                  </label>
+                  <ConfigProvider
+                    theme={{
+                      components: {
+                        Upload: {
+                          colorFillAlter: "#accee72b",
+                          controlOutline: "rgba(241, 163, 99, 0.25)",
+                        },
+                      },
+                    }}
+                  >
+                    <Upload.Dragger
+                      beforeUpload={handleEpubUpload}
+                      showUploadList={false}
+                    >
+                      <div className="py-8">
+                        <p className="text-gray-600 mb-2">
+                          Kéo thả file hoặc chọn
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          Format: epub &amp; Max file size: 25 MB
+                        </p>
+                      </div>
+                    </Upload.Dragger>
+                  </ConfigProvider>
+
+                  {epubFile ? (
+                    <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600 text-2xl">
+                          <File />
+                        </span>
+                        <span className="text-gray-700">{epubFile.name}</span>
+                      </div>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={handleRemoveEpubFile}
+                      />
+                    </div>
+                  ) : (
+                    existingFormats
+                      .filter((format) => format.typeName?.toUpperCase() === "EPUB")
+                      .map((format) => (
+                        <div
+                          key={format.id}
+                          className="bg-gray-50 p-3 rounded-lg flex items-center gap-2"
+                        >
+                          <span className="text-blue-600 text-2xl">
+                            <File />
+                          </span>
+                          <div>
+                            <p className="text-gray-700 font-medium">
+                              {format.typeName || "Định dạng hiện có"}
+                            </p>
+                            <p className="text-gray-500 text-sm">
+                              {format.fileSizeKb ? `${format.fileSizeKb} KB` : "File đã được tải lên"}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
               </div>
               <div className="lg:col-span-3 flex justify-end gap-3">
                 <Button
                   size="large"
                   onClick={() => navigate(PATHS.ADMIN.BOOKS)}
-                  className="rounded-lg px-12 py-2 h-auto text-base font-medium"
+                  className="mt-26 rounded-lg px-12 py-2 h-auto text-base font-medium"
                 >
                   Hủy
                 </Button>
@@ -432,7 +531,7 @@ const AdminEditbook = () => {
                   type="primary"
                   htmlType="submit"
                   size="large"
-                  className="bg-teal-500 hover:bg-teal-600 border-none rounded-lg px-12 py-2 h-auto text-base font-medium"
+                  className="mt-26 bg-teal-500 hover:bg-teal-600 border-none rounded-lg px-12 py-2 h-auto text-base font-medium"
                   loading={submitting}
                 >
                   Cập nhật sách

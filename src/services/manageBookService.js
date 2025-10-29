@@ -13,6 +13,30 @@ export const getBooks = async (page = 0, size = 10) => {
   }
 };
 
+export const getBooksByGenre = async (genreId, page = 0, size = 10) => {
+  try {
+    const response = await api.get(`/books/genre/${genreId}`, {
+      params: { page, size }
+    });
+    return response;
+  } catch (error) {
+    console.error("Get books by genre failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const searchBooks = async (keyword, page = 0, size = 10) => {
+  try {
+    const response = await api.get("/books/search", {
+      params: { keyword, page, size }
+    });
+    return response;
+  } catch (error) {
+    console.error("Search books failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
 export const getBookDetail = async (bookId) => {
   try {
     const response = await api.get(`/books/${bookId}`);
@@ -23,17 +47,6 @@ export const getBookDetail = async (bookId) => {
       "Get book detail failed:",
       error.response?.data || error.message,
     );
-    throw error;
-  }
-};
-
-export const getGenres = async () => {
-  try {
-    const response = await api.get("/books/genres");
-    console.log("Get genres response:", response.data);
-    return response.data?.content;
-  } catch (error) {
-    console.error("Get genres failed:", error.response?.data || error.message);
     throw error;
   }
 };
@@ -64,6 +77,17 @@ export const updateBook = async (bookId, payload) => {
     return response;
   } catch (error) {
     console.error("Update book failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const deleteBook = async (bookId) => {
+  try {
+    const response = await api.delete(`/admin/books/delete/${bookId}`);
+    console.log("Delete book response:", response);
+    return response;
+  } catch (error) {
+    console.error("Delete book failed:", error.response?.data || error.message);
     throw error;
   }
 };

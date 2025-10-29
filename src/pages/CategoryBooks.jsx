@@ -1,29 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
-import MainLayout from '../layout/MainLayout';
-import BookCard from '../components/BookCard';
-import books from '../data/book';
+import React, { useState, useEffect } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import MainLayout from "../layout/MainLayout";
+import BookCard from "../components/BookCard";
+import books from "../data/book";
+import { getGenres } from "../services/genreService";
 
 const CategoryBooks = () => {
   const { categoryId } = useParams();
   const [searchParams] = useSearchParams();
-  const categoryName = searchParams.get('name') || 'Thể loại';
+  const initialCategoryName = searchParams.get("name") || "Thể loại";
   
   const [filteredBooks, setFilteredBooks] = useState([]);
+  const [genreName, setGenreName] = useState(initialCategoryName);
+  const [genreDescription, setGenreDescription] = useState("");
+  const [genresLoading, setGenresLoading] = useState(false);
   const [sortBy, setSortBy] = useState('newest'); // newest, popular, title
   const [viewMode, setViewMode] = useState('grid'); // grid, list
   const [currentPage, setCurrentPage] = useState(1);
   const booksPerPage = 12;
 
   useEffect(() => {
+    const fetchGenreInfo = async () => {
+      setGenresLoading(true);
+      try {
+        const { genres } = await getGenres({ size: 200 });
+        const matchedGenre = genres.find(
+          (genre) => String(genre.id) === String(categoryId),
+        );
+
+        if (matchedGenre) {
+          setGenreName(matchedGenre.name);
+          setGenreDescription(matchedGenre.description || "");
+        } else {
+          setGenreName(initialCategoryName);
+          setGenreDescription("");
+        }
+      } catch (error) {
+        console.error("Không thể tải thông tin thể loại:", error);
+        setGenreName(initialCategoryName);
+        setGenreDescription("");
+      } finally {
+        setGenresLoading(false);
+      }
+    };
+
+    fetchGenreInfo();
+  }, [categoryId, initialCategoryName]);
+
+  useEffect(() => {
     // TODO: Fetch books by category from API
     // For now, use mock data
     const categoryBooks = books.filter(book => 
-      book.category === categoryName.toLowerCase() || 
-      book.genre === categoryName
+      book.category === genreName.toLowerCase() || 
+      book.genre === genreName
     );
     setFilteredBooks(categoryBooks);
-  }, [categoryId, categoryName]);
+  }, [categoryId, genreName]);
 
   // Sort books
   const sortedBooks = [...filteredBooks].sort((a, b) => {
@@ -56,17 +88,32 @@ const CategoryBooks = () => {
               </a>
               <span>/</span>
               <span className="text-gray-900 dark:text-white font-medium">
-                {categoryName}
+                {genreName}
               </span>
             </div>
             
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                  {categoryName}
+                  {genreName}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Tìm thấy <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredBooks.length}</span> cuốn sách
+                  {genresLoading ? (
+                    "Đang tải thông tin thể loại..."
+                  ) : (
+                    <>
+                      {genreDescription && (
+                        <span className="block text-sm text-gray-500 dark:text-gray-400 mb-1">
+                          {genreDescription}
+                        </span>
+                      )}
+                      Tìm thấy{" "}
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        {filteredBooks.length}
+                      </span>{" "}
+                      cuốn sách
+                    </>
+                  )}
                 </p>
               </div>
 

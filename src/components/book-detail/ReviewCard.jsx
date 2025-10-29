@@ -4,7 +4,7 @@ import { Star } from 'lucide-react';
 
 const ReviewCard = React.memo(({ review }) => {
   const { name, date, rating, comment } = review;
-  const initial = name.charAt(0).toUpperCase();
+  const initial = (name || 'Ẩn danh').charAt(0).toUpperCase(); // Xử lý trường hợp name là undefined/null
 
   return (
     <div className="flex gap-4 pb-6 border-b border-gray-100 last:border-0 bg-gray-100 p-4 rounded-xl">

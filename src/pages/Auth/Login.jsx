@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useAuth from '../../hook/useAuth.jsx';
+import { PATHS } from '../../constant/routePath.jsx';
 
 const BACKEND_URL = "http://localhost:8080";
 
@@ -13,24 +15,30 @@ const Login = ({ onModeChange, onClose }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const message = useMessage(); // Sử dụng global message
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
     if (!email || !password) {
       console.log('Email or password is empty');
       message.warning('Vui lòng nhập đủ Email và Mật khẩu');
+      setLoading(false);
       return;
     }
+    setLoading(true);
     
     try {
       console.log('Attempting login with:', { email, password });
-      await login(email, password);
+      const result = await login(email, password);
       message.success('Đăng nhập thành công!');
-      onClose(); // Close modal on successful login
+      const role = result?.data?.role;
+      if (role && role.toUpperCase() === 'ADMIN') {
+        navigate(PATHS.ADMIN.ROOT, { replace: true });
+      }
+      onClose?.(); // Close modal on successful login
     } catch (err) {
       message.error('Đăng nhập thất bại!');
       setError(err.message);
