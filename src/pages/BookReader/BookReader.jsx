@@ -21,7 +21,7 @@ export default function EpubCoreViewer({
 
   const [theme, setTheme] = useTheme();
 
-  const {src} =  useLocation().state || {src: ""};
+  const {src} =  {src: "/"};
   console.log("BookReader src:", src);
   const resolveTheme = () => {
     if (theme === 'dark') return 'dark';
