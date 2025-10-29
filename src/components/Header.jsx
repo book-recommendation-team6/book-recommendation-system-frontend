@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CategoryDropdown from './CategoriesDropdown';
 import ProfilePopover from './ProfilePopover';
+import SearchSuggestions from './SearchSuggestions';
 import useAuth from '../hook/useAuth';
+import { searchBooks } from '../services/manageBookService';
 
 const Header = ({
   onAuthClick,
@@ -14,7 +16,12 @@ const Header = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [internalSearch, setInternalSearch] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const { isAuthenticated, logout } = useAuth();
+  const searchTimeoutRef = useRef(null);
+  const searchContainerRef = useRef(null);
 
   const isSearchControlled = typeof searchValue === 'string';
 
@@ -29,12 +36,72 @@ const Header = ({
     } else {
       setInternalSearch(value);
     }
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // If search is empty, hide suggestions
+    if (!value.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    // Set new timeout for autocomplete
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const response = await searchBooks(value.trim(), 0, 5); // Lấy 5 suggestions
+        const books = response?.data?.content || response?.content || [];
+        const booksArray = Array.isArray(books) ? books : [];
+        setSuggestions(booksArray);
+        
+        // Chỉ hiện dropdown khi có kết quả
+        if (booksArray.length > 0) {
+          setShowSuggestions(true);
+        } else {
+          setShowSuggestions(false);
+        }
+      } catch (error) {
+        console.error('Failed to fetch suggestions:', error);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 1000); // Delay 1 giây
   };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const triggerSearch = () => {
     const query = (currentSearchValue || '').trim();
     if (onSearchSubmit) {
       onSearchSubmit(query);
+      setShowSuggestions(false);
       if (mobileMenuOpen) {
         setMobileMenuOpen(false);
       }
@@ -46,6 +113,11 @@ const Header = ({
       event.preventDefault();
       triggerSearch();
     }
+  };
+
+  const handleSuggestionSelect = () => {
+    setShowSuggestions(false);
+    setInternalSearch('');
   };
 
   return (
@@ -72,13 +144,18 @@ const Header = ({
             </div>
 
             {/* Search Bar */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative" ref={searchContainerRef}>
               <input
                 type="text"
                 placeholder="Tìm sách..."
                 value={currentSearchValue}
                 onChange={(e) => updateSearchValue(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
+                onFocus={() => {
+                  if (suggestions.length > 0) {
+                    setShowSuggestions(true);
+                  }
+                }}
                 className="w-full px-4 py-2 pr-12 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
@@ -89,6 +166,16 @@ const Header = ({
               >
                 <Search className="w-5 h-5" />
               </button>
+              
+              {/* Search Suggestions */}
+              {showSuggestions && (
+                <SearchSuggestions
+                  suggestions={suggestions}
+                  isLoading={isLoadingSuggestions}
+                  onSelect={handleSuggestionSelect}
+                  onClose={() => setShowSuggestions(false)}
+                />
+              )}
             </div>
           </div>
 
