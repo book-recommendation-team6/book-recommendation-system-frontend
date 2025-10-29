@@ -1,11 +1,23 @@
 import api from "../config/ApiConfig.js";
 
-export const getBooks = async (page = 0, size = 10) => {
+export const getBooks = async (page = 0, size = 10, filters = {}) => {
   try {
-    const response = await api.get("/books", {
-      params: { page, size }
-    });
-    // console.log("Get books response:", response);
+    const params = { page, size };
+    
+    // Add filter params if they exist
+    if (filters.genreIds && filters.genreIds.length > 0) {
+      params.genreIds = filters.genreIds.join(',');
+    }
+    if (filters.author && filters.author.length > 0) {
+      params.author = Array.isArray(filters.author) ? filters.author[0] : filters.author;
+    }
+    if (filters.publisher && filters.publisher.length > 0) {
+      params.publisher = Array.isArray(filters.publisher) ? filters.publisher[0] : filters.publisher;
+    }
+
+    console.log("[getBooks] Params:", params);
+    const response = await api.get("/books", { params });
+    console.log("[getBooks] Response:", response);
     return response;
   } catch (error) {
     console.error("Get books failed:", error.response?.data || error.message);
@@ -25,11 +37,24 @@ export const getBooksByGenre = async (genreId, page = 0, size = 10) => {
   }
 };
 
-export const searchBooks = async (keyword, page = 0, size = 10) => {
+export const searchBooks = async (keyword, page = 0, size = 10, filters = {}) => {
   try {
-    const response = await api.get("/books/search", {
-      params: { keyword, page, size }
-    });
+    const params = { keyword, page, size };
+    
+    // Add filter params if they exist
+    if (filters.genreIds && filters.genreIds.length > 0) {
+      params.genreIds = filters.genreIds.join(',');
+    }
+    if (filters.author && filters.author.length > 0) {
+      params.author = Array.isArray(filters.author) ? filters.author[0] : filters.author;
+    }
+    if (filters.publisher && filters.publisher.length > 0) {
+      params.publisher = Array.isArray(filters.publisher) ? filters.publisher[0] : filters.publisher;
+    }
+
+    console.log("[searchBooks] Params:", params);
+    const response = await api.get("/books/search", { params });
+    console.log("[searchBooks] Response:", response);
     return response;
   } catch (error) {
     console.error("Search books failed:", error.response?.data || error.message);

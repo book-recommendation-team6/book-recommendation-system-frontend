@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import AdminLayout from "../../layout/AdminLayout"
 import SearchBar from "../../components/admin/SearchBar"
 import BookTable from "../../components/admin/BookTable"
+import BookFilterBar from "../../components/admin/BookFilterBar"
 import { Button, Modal, message } from "antd"
 import { Plus } from "lucide-react"
 import { PATHS } from "../../constant/routePath"
@@ -22,6 +23,11 @@ const AdminBooks = () => {
   const navigate = useNavigate()
   const [bookData, setBookData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("")
+  const [filters, setFilters] = useState({
+    genreIds: [],
+    author: undefined,
+    publisher: undefined,
+  })
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -37,8 +43,8 @@ const AdminBooks = () => {
     try {
       const trimmedKeyword = (keyword ?? "").trim()
       const response = trimmedKeyword
-        ? await searchBooks(trimmedKeyword, page, size)
-        : await getBooks(page, size);
+        ? await searchBooks(trimmedKeyword, page, size, filters)
+        : await getBooks(page, size, filters);
       console.log("Fetched books:", response);
       
       const data = response.data || response;
@@ -77,7 +83,7 @@ const AdminBooks = () => {
 
     return () => clearTimeout(handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [searchQuery, filters]);
 
   const handleTableChange = (paginationConfig) => {
     const page = paginationConfig.current - 1; // Convert to 0-based
@@ -155,6 +161,8 @@ const AdminBooks = () => {
             <span className="sm:hidden">Thêm sách</span>
           </Button>
         </div>
+
+        <BookFilterBar filters={filters} onFilterChange={setFilters} />
 
         <BookTable 
           books={bookData} 

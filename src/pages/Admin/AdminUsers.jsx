@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import AdminLayout from "../../layout/AdminLayout"
 import SearchBar from "../../components/admin/SearchBar"
 import UserTable from "../../components/admin/UserTable"
+import UserFilterBar from "../../components/admin/UserFilterBar"
 import { Modal, message } from "antd"
 import { getUser, banUser, unbanUser } from "../../services/manageUserService"
 
@@ -26,6 +27,10 @@ const normalizeStatus = (status) => {
 const AdminUsers = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [users, setUsers] = useState([])
+  const [filters, setFilters] = useState({
+    role: undefined,
+    status: undefined,
+  })
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -37,7 +42,7 @@ const AdminUsers = () => {
   const fetchUsers = async (page = 0, size = pagination.pageSize, keyword = "") => {
     setLoading(true)
     try {
-      const response = await getUser(page, size, keyword)
+      const response = await getUser(page, size, keyword, filters)
       const data = response.data || response
       const content = data?.content || []
       const total = data?.totalElements || 0
@@ -79,7 +84,7 @@ const AdminUsers = () => {
 
     return () => clearTimeout(handler)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery])
+  }, [searchQuery, filters])
 
   // Handle table change (pagination, filters, sorter)
   const handleTableChange = (paginationConfig) => {
@@ -136,6 +141,7 @@ const AdminUsers = () => {
     <AdminLayout title="ADMIN">
       <div className="space-y-6">
         <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Tìm kiếm..." />
+        <UserFilterBar filters={filters} onFilterChange={setFilters} />
         <UserTable 
           users={users}
           onLockUser={handleLockUser}
