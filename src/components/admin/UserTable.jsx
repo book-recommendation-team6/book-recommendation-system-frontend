@@ -32,7 +32,7 @@ const resolveStatusKey = (status) => {
 
 const UserTable = ({ users, onLockUser, pagination, onTableChange, loading: tableLoading }) => {
   const columns = [
-    { title: 'Họ và tên', dataIndex: 'username', render: (_, record) => record.username || record.name || '-' },
+    { title: 'Username', dataIndex: 'username', render: (_, record) => record.username || record.name || '-' },
     { title: 'User id', dataIndex: 'id' },
     { title: 'Email', dataIndex: 'email' },
     { title: 'Ngày tạo', dataIndex: 'createdAt', render: (text) => new Date(text).toLocaleDateString() },
