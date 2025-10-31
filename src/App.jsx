@@ -21,8 +21,9 @@ import AdminDashboard from "./pages/Admin/AdminDashboard"
 import AdminUsers from "./pages/Admin/AdminUsers"
 import AdminBooks from "./pages/Admin/AdminBooks"
 import AdminAddBook from "./pages/Admin/AdminAddbook"
-import OAuthRedirect from "./pages/Auth/OAuthRedirect.jsx";
 import AdminEditBook from "./pages/Admin/AdminEditbook"
+import AdminGenres from "./pages/Admin/AdminGenres"
+import OAuthRedirect from "./pages/Auth/OAuthRedirect.jsx";
 
 import Upload from "./pages/Upload.jsx"
 
@@ -116,6 +117,14 @@ function App() {
           element={
             <AdminRoute>
               <AdminEditBook />
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path={PATHS.ADMIN.GENRES} 
+          element={
+            <AdminRoute>
+              <AdminGenres />
             </AdminRoute>
           } 
         />

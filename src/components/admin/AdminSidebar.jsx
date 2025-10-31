@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom"
-import { Home, Book, Users } from "lucide-react"
+import { Home, Book, Users, Tag } from "lucide-react"
 
 const AdminSidebar = () => {
   const location = useLocation()
@@ -8,6 +8,7 @@ const AdminSidebar = () => {
     { path: "/admin", label: "Dashboard", icon: Home },
     { path: "/admin/books", label: "Quản lí sách", icon: Book },
     { path: "/admin/users", label: "Quản lí người dùng", icon: Users },
+    { path: "/admin/genres", label: "Quản lí thể loại", icon: Tag },
   ]
 
   return (

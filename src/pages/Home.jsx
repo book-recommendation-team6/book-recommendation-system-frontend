@@ -4,8 +4,10 @@ import Hero from "../components/Hero";
 import BookCarousel from "../components/BookCarousel";
 import MainLayout from "../layout/MainLayout";
 import { getBooks, getBooksByGenre } from "../services/manageBookService";
+import { getRecommendedBooks } from "../services/bookService";
 
 const DEFAULT_PAGE_SIZE = 12;
+import useAuth from "../hook/useAuth";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -16,6 +18,8 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  const { user } = useAuth();
+  const userId = user?.id;
   // Lazy loading states
   const [genre1Loaded, setGenre1Loaded] = useState(false);
   const [genre2Loaded, setGenre2Loaded] = useState(false);
@@ -43,20 +47,28 @@ const Home = () => {
       setError(null);
 
       try {
-        const response = await getBooks(0, DEFAULT_PAGE_SIZE);
-        const books = response?.data?.content || response?.content || [];
+        let response;
+        // Nếu có userId thì lấy sách gợi ý, không thì lấy sách thông thường
+        if (userId) {
+          response = await getRecommendedBooks(userId, 12);
+          console.log("Recommended books in Home:", response);
+        } else {
+          response = await getBooks(0, 12);
+        }
+
+        const books = response?.data || [];
         setAllBooks(Array.isArray(books) ? books : []);
-      } catch {
+      } catch (error) {
+        console.error("Error loading books:", error);
         setError("Không thể tải danh sách sách. Vui lòng thử lại sau.");
         setAllBooks([]);
       } finally {
         setLoading(false);
       }
     };
-
     loadAllBooks();
-  }, []);
-
+  }, [userId]);
+  console.log("All books:", allBooks);
   // Load books by genre
   const loadGenreBooks = useCallback(async (genreId, setter) => {
     try {
