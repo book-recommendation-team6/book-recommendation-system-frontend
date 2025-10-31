@@ -2,14 +2,20 @@ import api from "../config/ApiConfig.js";
 
 /**
  * Fetch genres with pagination support.
- * @param {{ page?: number, size?: number }} params
+ * @param {{ page?: number, size?: number, keyword?: string, sort?: string }} params
  * @returns {{ genres: Array, page: Object|null, message: string }}
  */
-export const getGenres = async ({ page = 0, size = 50 } = {}) => {
+export const getGenres = async ({ page = 0, size = 50, keyword = "", sort = "" } = {}) => {
   try {
-    const response = await api.get("/books/genres", {
-      params: { page, size },
-    });
+    const params = { page, size };
+    if (keyword?.trim()) {
+      params.keyword = keyword.trim();
+    }
+    if (sort?.trim()) {
+      params.sort = sort.trim();
+    }
+
+    const response = await api.get("/books/genres", { params });
 
     const pageData = response.data ?? null;
 

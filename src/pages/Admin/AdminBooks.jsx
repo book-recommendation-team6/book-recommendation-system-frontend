@@ -7,9 +7,9 @@ import GenreFilter from "../../components/admin/GenreFilter"
 import SortSelect from "../../components/admin/SortSelect"
 import BookTable from "../../components/admin/BookTable"
 import { Button, Modal, message } from "antd"
-import { Plus } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import { PATHS } from "../../constant/routePath"
-import { getBooks, searchBooks, deleteBook as deleteBookApi, getBooksByGenre } from "../../services/manageBookService"
+import { deleteBook as deleteBookApi, deleteBooksBulk, getAdminBooks } from "../../services/manageBookService"
 
 // const mockBooks = Array.from({ length: 10 }, (_, i) => ({
 //   id: i + 1,
@@ -34,40 +34,39 @@ const AdminBooks = () => {
   const [loading, setLoading] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [bookToDelete, setBookToDelete] = useState(null)
+  const [selectedBookIds, setSelectedBookIds] = useState([])
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false)
+  const [pendingBulkIds, setPendingBulkIds] = useState([])
   const searchInitialized = useRef(false)
   const filterInitialized = useRef(false)
+  const sortInitialized = useRef(false)
 
-  const fetchBooks = async (page = 0, size = pagination.pageSize, keyword = "", genreId = "") => {
+  const fetchBooks = async (
+    page = 0,
+    size = pagination.pageSize,
+    keywordParam = searchQuery,
+    genreIdParam = selectedGenre,
+    sortParam = sortBy
+  ) => {
     setLoading(true)
     try {
-      const trimmedKeyword = (keyword ?? "").trim()
-      let response;
-      
-      // Priority: search > genre filter > all books
-      if (trimmedKeyword) {
-        response = await searchBooks(trimmedKeyword, page, size)
-      } else if (genreId) {
-        response = await getBooksByGenre(genreId, page, size)
-      } else {
-        response = await getBooks(page, size)
-      }
-      
-      console.log("Fetched books:", response);
-      
+      const response = await getAdminBooks({
+        page,
+        size,
+        keyword: keywordParam,
+        genreId: genreIdParam,
+        sort: sortParam,
+      })
+
       const data = response.data || response;
-      let content = data?.content || [];
-      const total = data?.totalElements || 0;
-      
-      // Client-side sorting
-      content = sortBooks(content, sortBy);
-      
+      const content = data?.content || [];
+
       setBookData(content);
-      setPagination(prev => ({
-        ...prev,
-        pageSize: size,
-        total,
-        current: page + 1, // AntD uses 1-based, backend uses 0-based
-      }));
+      setPagination({
+        current: (data?.number ?? page) + 1,
+        pageSize: data?.size ?? size,
+        total: data?.totalElements ?? 0,
+      });
     } catch (error) {
       console.error("Error fetching books:", error);
       message.error("Không thể tải danh sách sách");
@@ -76,26 +75,8 @@ const AdminBooks = () => {
     }
   }
 
-  const sortBooks = (books, sortType) => {
-    const sorted = [...books];
-    switch (sortType) {
-      case "newest":
-        return sorted.sort((a, b) => (b.publicationYear || 0) - (a.publicationYear || 0));
-      case "oldest":
-        return sorted.sort((a, b) => (a.publicationYear || 0) - (b.publicationYear || 0));
-      case "title-asc":
-        return sorted.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-      case "title-desc":
-        return sorted.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
-      case "rating":
-        return sorted.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
-      default:
-        return sorted;
-    }
-  }
-
   useEffect(() => {
-    fetchBooks(0, pagination.pageSize);
+    fetchBooks(0, pagination.pageSize, searchQuery, selectedGenre, sortBy);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -106,7 +87,7 @@ const AdminBooks = () => {
     }
 
     const handler = setTimeout(() => {
-      fetchBooks(0, pagination.pageSize, searchQuery, selectedGenre);
+      fetchBooks(0, pagination.pageSize, searchQuery, selectedGenre, sortBy);
     }, 400);
 
     return () => clearTimeout(handler);
@@ -119,20 +100,24 @@ const AdminBooks = () => {
       return;
     }
 
-    fetchBooks(0, pagination.pageSize, searchQuery, selectedGenre);
+    fetchBooks(0, pagination.pageSize, searchQuery, selectedGenre, sortBy);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGenre]);
 
   useEffect(() => {
-    // Re-sort current data when sort option changes
-    setBookData(prev => sortBooks(prev, sortBy));
+    if (!sortInitialized.current) {
+      sortInitialized.current = true;
+      return;
+    }
+
+    fetchBooks(0, pagination.pageSize, searchQuery, selectedGenre, sortBy);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy]);
 
   const handleTableChange = (paginationConfig) => {
     const page = paginationConfig.current - 1; // Convert to 0-based
     const size = paginationConfig.pageSize;
-    fetchBooks(page, size, searchQuery, selectedGenre);
+    fetchBooks(page, size, searchQuery, selectedGenre, sortBy);
   }
 
   const handleSearch = (query) => {
@@ -167,7 +152,8 @@ const AdminBooks = () => {
       const currentPageIndex = Math.max(0, pagination.current - 1);
       const nextPage = Math.min(currentPageIndex, maxPageIndex);
 
-      await fetchBooks(nextPage, pagination.pageSize, searchQuery, selectedGenre);
+      setSelectedBookIds((prev) => prev.filter((id) => id !== bookToDelete))
+      await fetchBooks(nextPage, pagination.pageSize, searchQuery, selectedGenre, sortBy);
 
       setIsDeleteModalOpen(false)
       setBookToDelete(null)
@@ -180,6 +166,49 @@ const AdminBooks = () => {
   const cancelDelete = () => {
     setIsDeleteModalOpen(false)
     setBookToDelete(null)
+  }
+
+  const handleBookSelectionChange = (selectedKeys) => {
+    setSelectedBookIds(selectedKeys)
+  }
+
+  const handleBulkDeleteClick = () => {
+    if (!selectedBookIds.length) return
+    setPendingBulkIds(selectedBookIds)
+    setIsBulkDeleteModalOpen(true)
+  }
+
+  const confirmBulkDelete = async () => {
+    if (!pendingBulkIds.length) {
+      return
+    }
+
+    try {
+      await deleteBooksBulk(pendingBulkIds)
+      message.success(`Xóa ${pendingBulkIds.length} sách thành công!`)
+
+      const totalAfterDelete = Math.max(0, pagination.total - pendingBulkIds.length)
+      const maxPageIndex = Math.max(
+        0,
+        Math.ceil(totalAfterDelete / pagination.pageSize) - 1,
+      )
+      const currentPageIndex = Math.max(0, pagination.current - 1)
+      const nextPage = Math.min(currentPageIndex, maxPageIndex)
+
+      await fetchBooks(nextPage, pagination.pageSize, searchQuery, selectedGenre, sortBy)
+
+      setSelectedBookIds([])
+      setIsBulkDeleteModalOpen(false)
+      setPendingBulkIds([])
+    } catch (error) {
+      message.error("Xóa sách thất bại!")
+      console.error("Error deleting books:", error)
+    }
+  }
+
+  const cancelBulkDelete = () => {
+    setIsBulkDeleteModalOpen(false)
+    setPendingBulkIds([])
   }
 
   const paginationConfig = {
@@ -215,23 +244,51 @@ const AdminBooks = () => {
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <GenreFilter value={selectedGenre} onChange={setSelectedGenre} />
-          <SortSelect 
-            value={sortBy} 
-            onChange={setSortBy} 
+          <SortSelect
+            value={sortBy}
+            onChange={setSortBy}
             options={sortOptions}
             placeholder="Sắp xếp theo"
           />
         </div>
 
-        <BookTable 
-          books={bookData} 
-          onEdit={handleEditBook} 
+        {selectedBookIds.length > 0 && (
+          <div className="flex justify-end">
+            <Button
+              danger
+              onClick={handleBulkDeleteClick}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Xóa tất cả ({selectedBookIds.length})
+            </Button>
+          </div>
+        )}
+
+        <BookTable
+          books={bookData}
+          onEdit={handleEditBook}
           onDelete={handleDeleteBook}
           pagination={paginationConfig}
           onTableChange={handleTableChange}
           loading={loading}
+          selectedRowKeys={selectedBookIds}
+          onSelectionChange={handleBookSelectionChange}
         />
       </div>
+
+      <Modal
+        title="Xóa nhiều sách"
+        open={isBulkDeleteModalOpen}
+        onOk={confirmBulkDelete}
+        onCancel={cancelBulkDelete}
+        okText="Đồng ý"
+        cancelText="Từ chối"
+        okButtonProps={{ danger: true }}
+        centered
+      >
+        <p>Bạn muốn xóa {pendingBulkIds.length} sách đã chọn?</p>
+      </Modal>
 
       <Modal
         title="Xóa sách"

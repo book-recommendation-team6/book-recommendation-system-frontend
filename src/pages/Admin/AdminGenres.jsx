@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import AdminLayout from "../../layout/AdminLayout"
 import SearchBar from "../../components/admin/SearchBar"
 import GenreTable from "../../components/admin/GenreTable"
@@ -11,7 +11,6 @@ const { TextArea } = Input
 
 const AdminGenres = () => {
   const [genres, setGenres] = useState([])
-  const [filteredGenres, setFilteredGenres] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [pagination, setPagination] = useState({
     current: 1,
@@ -19,23 +18,30 @@ const AdminGenres = () => {
     total: 0,
   })
   const [loading, setLoading] = useState(false)
+  const searchInitialized = useRef(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [editingGenre, setEditingGenre] = useState(null)
   const [genreToDelete, setGenreToDelete] = useState(null)
   const [form] = Form.useForm()
 
-  const fetchGenres = async () => {
+  const fetchGenres = async (
+    page = pagination.current - 1,
+    size = pagination.pageSize,
+    keyword = searchQuery
+  ) => {
     setLoading(true)
     try {
-      const response = await getGenres({ page: 0, size: 1000 })
-      const genreList = response.genres || []
+      const response = await getGenres({ page, size, keyword })
+      const pageData = response.page
+      const genreList = pageData?.content ?? response.genres ?? []
+
       setGenres(genreList)
-      setFilteredGenres(genreList)
-      setPagination(prev => ({
-        ...prev,
-        total: genreList.length,
-      }))
+      setPagination({
+        current: (pageData?.number ?? page) + 1,
+        pageSize: pageData?.size ?? size,
+        total: pageData?.totalElements ?? genreList.length,
+      })
     } catch (error) {
       console.error("Error fetching genres:", error)
       message.error("Không thể tải danh sách thể loại")
@@ -45,29 +51,27 @@ const AdminGenres = () => {
   }
 
   useEffect(() => {
-    fetchGenres()
+    fetchGenres(0, pagination.pageSize, searchQuery)
   }, [])
 
   useEffect(() => {
-    if (searchQuery.trim()) {
-      const filtered = genres.filter(genre =>
-        genre.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (genre.description && genre.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-      setFilteredGenres(filtered)
-      setPagination(prev => ({ ...prev, total: filtered.length, current: 1 }))
-    } else {
-      setFilteredGenres(genres)
-      setPagination(prev => ({ ...prev, total: genres.length }))
+    if (!searchInitialized.current) {
+      searchInitialized.current = true
+      return
     }
-  }, [searchQuery, genres])
+
+    const handler = setTimeout(() => {
+      fetchGenres(0, pagination.pageSize, searchQuery)
+    }, 400)
+
+    return () => clearTimeout(handler)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery])
 
   const handleTableChange = (paginationConfig) => {
-    setPagination(prev => ({
-      ...prev,
-      current: paginationConfig.current,
-      pageSize: paginationConfig.pageSize,
-    }))
+    const page = paginationConfig.current - 1
+    const size = paginationConfig.pageSize
+    fetchGenres(page, size, searchQuery)
   }
 
   const handleAddGenre = () => {
@@ -105,7 +109,7 @@ const AdminGenres = () => {
       setIsModalOpen(false)
       form.resetFields()
       setEditingGenre(null)
-      fetchGenres()
+      fetchGenres(pagination.current - 1, pagination.pageSize, searchQuery)
     } catch (error) {
       if (error.errorFields) {
         // Validation error
@@ -130,7 +134,7 @@ const AdminGenres = () => {
       message.success("Xóa thể loại thành công!")
       setIsDeleteModalOpen(false)
       setGenreToDelete(null)
-      fetchGenres()
+      fetchGenres(pagination.current - 1, pagination.pageSize, searchQuery)
     } catch (error) {
       message.error("Xóa thể loại thất bại!")
       console.error("Error deleting genre:", error)
@@ -171,7 +175,7 @@ const AdminGenres = () => {
         </div>
 
         <GenreTable 
-          genres={filteredGenres}
+          genres={genres}
           onEdit={handleEditGenre}
           onDelete={handleDeleteGenre}
           pagination={paginationConfig}

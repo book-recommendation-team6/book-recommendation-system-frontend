@@ -1,6 +1,5 @@
 "use client"
-import { useState } from "react"
-import { ConfigProvider, Button, Flex, Table } from "antd"
+import { ConfigProvider, Table } from "antd"
 import { Pencil, Trash2 } from "lucide-react"
 
 const columns = [
@@ -54,29 +53,22 @@ const columns = [
   },
 ]
 
-const BookTable = ({ books, onEdit, onDelete, pagination, onTableChange, loading: tableLoading }) => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState([])
-  const [loading, setLoading] = useState(false)
-
-  const start = () => {
-    setLoading(true)
-    setTimeout(() => {
-      setSelectedRowKeys([])
-      setLoading(false)
-    }, 1000)
-  }
-
-  const onSelectChange = (newSelectedRowKeys) => {
-    console.log("selectedRowKeys changed: ", newSelectedRowKeys)
-    setSelectedRowKeys(newSelectedRowKeys)
-  }
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: onSelectChange,
-  }
-
-  const hasSelected = selectedRowKeys.length > 0
+const BookTable = ({
+  books,
+  onEdit,
+  onDelete,
+  pagination,
+  onTableChange,
+  loading: tableLoading,
+  selectedRowKeys = [],
+  onSelectionChange,
+}) => {
+  const rowSelection = onSelectionChange
+    ? {
+        selectedRowKeys,
+        onChange: onSelectionChange,
+      }
+    : undefined
 
   const dataSource = books.map((book) => ({
     ...book,
@@ -88,33 +80,25 @@ const BookTable = ({ books, onEdit, onDelete, pagination, onTableChange, loading
   }))
 
   return (
-    <Flex gap="middle" vertical>
-      <Flex align="center" gap="middle">
-        <Button type="primary" onClick={start} disabled={!hasSelected} loading={loading}>
-          Reload
-        </Button>
-        {hasSelected ? `Selected ${selectedRowKeys.length} items` : null}
-      </Flex>
-      <ConfigProvider
-        theme={{
-          components: {
-            Table: {
-              headerBg: "#E7E7E7",
-            },
+    <ConfigProvider
+      theme={{
+        components: {
+          Table: {
+            headerBg: "#E7E7E7",
           },
-        }}
-      >
-        <Table
-          rowSelection={rowSelection}
-          pagination={pagination}
-          onChange={onTableChange}
-          loading={tableLoading}
-          columns={columns}
-          dataSource={dataSource}
-          size="large"
-        />
-      </ConfigProvider>
-    </Flex>
+        },
+      }}
+    >
+      <Table
+        rowSelection={rowSelection}
+        pagination={pagination}
+        onChange={onTableChange}
+        loading={tableLoading}
+        columns={columns}
+        dataSource={dataSource}
+        size="large"
+      />
+    </ConfigProvider>
   )
 }
 

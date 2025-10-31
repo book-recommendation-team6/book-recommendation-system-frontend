@@ -5,21 +5,23 @@ import BookCard from "../components/BookCard";
 import { getGenres } from "../services/genreService";
 import { getBooksByGenre } from "../services/manageBookService";
 
+const BOOKS_PER_PAGE = 12;
+
 const CategoryBooks = () => {
   const { categoryId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialCategoryName = searchParams.get("name") || "Thể loại";
   
-  const [filteredBooks, setFilteredBooks] = useState([]);
+  const [books, setBooks] = useState([]);
+  const [totalBooks, setTotalBooks] = useState(0);
   const [genreName, setGenreName] = useState(initialCategoryName);
   const [genreDescription, setGenreDescription] = useState("");
   const [genresLoading, setGenresLoading] = useState(false);
   const [booksLoading, setBooksLoading] = useState(false);
-  const [sortBy, setSortBy] = useState('newest'); // newest, popular, title
+  const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState('grid'); // grid, list
   const [currentPage, setCurrentPage] = useState(1);
-  const booksPerPage = 12;
 
   useEffect(() => {
     const fetchGenreInfo = async () => {
@@ -49,45 +51,59 @@ const CategoryBooks = () => {
     fetchGenreInfo();
   }, [categoryId, initialCategoryName]);
 
-  useEffect(() => {
-    const fetchBooksByCategory = async () => {
-      if (!categoryId) return;
-      
-      setBooksLoading(true);
-      try {
-        // Fetch books by genre from API
-        const response = await getBooksByGenre(categoryId, 0, 100); // Lấy 100 sách
-        const books = response?.data?.content || response?.content || [];
-        setFilteredBooks(Array.isArray(books) ? books : []);
-      } catch (error) {
-        console.error("Không thể tải sách theo thể loại:", error);
-        setFilteredBooks([]);
-      } finally {
-        setBooksLoading(false);
-      }
-    };
+  const fetchBooksByCategory = useCallback(async (page = 1) => {
+    if (!categoryId) return;
 
-    fetchBooksByCategory();
+    const pageIndex = Math.max(0, page - 1);
+
+    setBooksLoading(true);
+    try {
+      const response = await getBooksByGenre(categoryId, {
+        page: pageIndex,
+        size: BOOKS_PER_PAGE,
+        sort: sortBy,
+      });
+
+      const data = response?.data || response;
+      const content = data?.content || [];
+      const total = data?.totalElements ?? content.length;
+      const totalPagesCalculated = Math.max(1, Math.ceil(total / BOOKS_PER_PAGE));
+
+      if (page > totalPagesCalculated) {
+        setTotalBooks(total);
+        setBooks([]);
+        setCurrentPage(totalPagesCalculated);
+        return;
+      }
+
+      setBooks(Array.isArray(content) ? content : []);
+      setTotalBooks(total);
+    } catch (error) {
+      console.error("Không thể tải sách theo thể loại:", error);
+      setBooks([]);
+      setTotalBooks(0);
+    } finally {
+      setBooksLoading(false);
+    }
+  }, [categoryId, sortBy]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setBooks([]);
+    setTotalBooks(0);
   }, [categoryId]);
 
-  // Sort books
-  const sortedBooks = [...filteredBooks].sort((a, b) => {
-    switch (sortBy) {
-      case 'title':
-        return (a.title || '').localeCompare(b.title || '');
-      case 'popular':
-        return (b.averageRating || 0) - (a.averageRating || 0);
-      case 'newest':
-      default:
-        return (b.publicationYear || 0) - (a.publicationYear || 0);
+  useEffect(() => {
+    if (!categoryId) {
+      setBooks([]);
+      setTotalBooks(0);
+      return;
     }
-  });
+    fetchBooksByCategory(currentPage);
+  }, [categoryId, sortBy, currentPage, fetchBooksByCategory]);
 
-  // Pagination
-  const indexOfLastBook = currentPage * booksPerPage;
-  const indexOfFirstBook = indexOfLastBook - booksPerPage;
-  const currentBooks = sortedBooks.slice(indexOfFirstBook, indexOfLastBook);
-  const totalPages = Math.ceil(sortedBooks.length / booksPerPage);
+  const currentBooks = books;
+  const totalPages = Math.max(1, Math.ceil(totalBooks / BOOKS_PER_PAGE));
 
   const handleSearchSubmit = useCallback((keyword) => {
     const trimmedKeyword = keyword.trim();
@@ -95,6 +111,11 @@ const CategoryBooks = () => {
       navigate(`/search?q=${encodeURIComponent(trimmedKeyword)}`);
     }
   }, [navigate]);
+
+  const handleSortChange = (value) => {
+    setSortBy(value);
+    setCurrentPage(1);
+  };
 
   return (
     <MainLayout onSearchSubmit={handleSearchSubmit}>
@@ -129,7 +150,7 @@ const CategoryBooks = () => {
                       )}
                       Tìm thấy{" "}
                       <span className="font-semibold text-blue-600 dark:text-blue-400">
-                        {filteredBooks.length}
+                        {totalBooks}
                       </span>{" "}
                       cuốn sách
                     </>
@@ -176,12 +197,13 @@ const CategoryBooks = () => {
                 </label>
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => handleSortChange(e.target.value)}
                   className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
-                  <option value="newest">Mới nhất</option>
                   <option value="popular">Phổ biến nhất</option>
-                  <option value="title">Tên sách (A-Z)</option>
+                  <option value="newest">Mới nhất</option>
+                  <option value="title-asc">Tên sách (A-Z)</option>
+                  <option value="title-desc">Tên sách (Z-A)</option>
                 </select>
               </div>
 
