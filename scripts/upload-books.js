@@ -15,13 +15,13 @@ const __dirname = path.dirname(__filename);
 // Cấu hình
 const CONFIG = {
   API_BASE_URL: 'http://localhost:8080/api/v1', // Thay đổi nếu cần
-  BOOKS_JSON: path.join(__dirname, '../src/sachvui.json'),
+  BOOKS_JSON: path.join(__dirname, '../src/books_final.json'),
   EPUB_DIR: path.join(__dirname, '../src/epub'),
   PDF_DIR: path.join(__dirname, '../src/pdf'),
   IMAGE_DIR: path.join(__dirname, '../src/image'),
   // Token admin - lấy từ localStorage sau khi đăng nhập
   // Hoặc để null và nhập thủ công khi chạy script
-  ADMIN_TOKEN: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpZCI6MTMsInJvbGVzIjpbIkFETUlOIl0sImlhdCI6MTc2MTc1MTgxOSwiZXhwIjoxNzYxNzU5MDE5LCJqdGkiOiI5NDFlZWZmYy02ZGFmLTRlZTEtODRkYy1mZTBiYWJmM2ExNTcifQ.hYh2KcpUx63ENY8yDkl7oyWdTahpKNOViWDHiTGD3rE",
+  ADMIN_TOKEN: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpZCI6MTMsInJvbGVzIjpbIkFETUlOIl0sImlhdCI6MTc2MTkyNDY4OCwiZXhwIjoxNzYxOTMxODg4LCJqdGkiOiJiNWQ1YWYwYi0wMmI5LTQ3N2QtYjVkYy01YmY5YTI5ZWYxNmYifQ.nz_g5UiQJ67JfdBOLpPCUURUgfLSAnr1Z28F5nlwN54",
 };
 
 // Đọc token từ command line argument hoặc environment variable
@@ -149,24 +149,25 @@ async function uploadBook(bookData, index, total) {
     });
     
     formData.append('publisher', publisher || '');
-    
     // Genre - cần map category sang genreId
     const genreMap = {
-      'Công nghệ': 1,
-      'Văn học': 2,
-      'Kinh tế': 3,
-      'Tâm lý': 4,
-      'Khoa học': 5,
-      'Lịch sử': 6,
-      'Nghệ thuật': 7,
+      'Chưa phân loại': 2,
+      'Công nghệ thông tin': 3,
+      'Khoa học': 4,
+      'Kinh dị': 5,
+      'Kỹ năng sống': 6,
+      'Lịch sử': 7,
       'Thiếu nhi': 8,
-      'Tài chính': 9,
-      'Kỹ năng sống': 10,
+      'Tiểu thuyết': 9,
+      'Trinh thám': 10,
+      'Tài chính': 11,
+      'Tâm Lý': 12,
+      'Tâm linh': 13,
       // Thêm mapping khác nếu cần
     };
     const genreId = genreMap[category] || 1;
     formData.append('genreIds', genreId);
-    
+    formData.append("publicationYear", '2023'); // Năm xuất bản mặc định
     // Upload ảnh bìa (field name: 'cover' theo AdminAddbook.jsx)
     formData.append('cover', fs.createReadStream(coverImagePath), {
       filename: path.basename(coverImagePath),

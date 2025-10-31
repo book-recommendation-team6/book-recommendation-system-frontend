@@ -86,9 +86,9 @@ const Home = () => {
     if (loading) return;
 
     const genreConfigs = [
-      { ref: genre1Ref, loadedRef: genre1LoadedRef, setter: setGenre1Loaded, genreId: 9, setBooks: setGenre1Books },
-      { ref: genre2Ref, loadedRef: genre2LoadedRef, setter: setGenre2Loaded, genreId: 10, setBooks: setGenre2Books },
-      { ref: genre3Ref, loadedRef: genre3LoadedRef, setter: setGenre3Loaded, genreId: 6, setBooks: setGenre3Books },
+      { ref: genre1Ref, loadedRef: genre1LoadedRef, setter: setGenre1Loaded, genreId: 11, setBooks: setGenre1Books },
+      { ref: genre2Ref, loadedRef: genre2LoadedRef, setter: setGenre2Loaded, genreId: 6, setBooks: setGenre2Books },
+      { ref: genre3Ref, loadedRef: genre3LoadedRef, setter: setGenre3Loaded, genreId: 9, setBooks: setGenre3Books },
     ];
 
     const observer = new IntersectionObserver(
@@ -194,7 +194,7 @@ const Home = () => {
             <div ref={genre3Ref} className="min-h-[100px]">
               {genre3Loaded ? (
                 genre3Books.length > 0 ? (
-                  <BookCarousel books={genre3Books} title="LỊCH SỬ" />
+                  <BookCarousel books={genre3Books} title="TIỂU THUYẾT" />
                 ) : (
                   <div className="py-8 text-center">
                     <p className="text-gray-600 dark:text-gray-400">Không có sách thể loại Lịch sử</p>
