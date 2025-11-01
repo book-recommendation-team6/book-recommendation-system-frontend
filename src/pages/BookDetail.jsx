@@ -11,6 +11,7 @@ import { useMessage } from '../contexts/MessageProvider';
 import { message as antdMessage } from 'antd';
 import { createOrUpdateRating, getBookRatings, getAverageRatingByBookId } from '../services/ratingService.js';
 import { getBookFavorites, addFavorite, removeFavorite } from '../services/bookFavorite';
+import {getSimilarBooks} from '../services/bookService';
 import { getBooks } from '../services/manageBookService';
 import { useParams } from "react-router-dom";
 import { getBookDetail } from '../services/manageBookService';
@@ -99,15 +100,15 @@ const BookDetail = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await getBooks(0, 10);
-        // console.log("Fetched books for book detail page:", response);
-        setRelatedBooks(response.data?.content || response.content || []);
+        const response = await getSimilarBooks(id, 10);
+        console.log("Fetched similar books for book detail page:", response.data);
+        setRelatedBooks(response.data || []);
       } catch (error) {
         console.error("Failed to fetch books for book detail page:", error);
       }
     };
     fetchBooks();
-  }, []);
+  }, [id]);
 
 
 

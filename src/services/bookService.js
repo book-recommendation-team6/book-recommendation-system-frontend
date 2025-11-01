@@ -13,6 +13,18 @@ export const getRecommendedBooks = async (userId, limit = 10) => {
   }
 };
 
+export const getSimilarBooks = async (bookId, limit = 10) => {
+  try {
+    const response = await api.get('/similar-books', {
+      params: { bookId, limit }
+    });
+    return response;
+  } catch (error) {
+    console.error("Failed to fetch similar books:", error);
+    throw error;
+  }
+};
+
 export const getBookDetail = async (bookId) => {
   try {
     const response = await api.get(`/books/${bookId}`);
