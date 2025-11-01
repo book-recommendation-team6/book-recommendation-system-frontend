@@ -20,5 +20,6 @@ export const PATHS = {
     ADD_BOOK: "/admin/books/add",
     EDIT_BOOK: "/admin/books/edit/:id",
     GENRES: "/admin/genres",
+    RECOMMENDATION: "/admin/recommendation",
   },
 }

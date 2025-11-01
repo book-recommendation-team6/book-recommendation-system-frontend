@@ -11,6 +11,12 @@ import useAuth from "../../hook/useAuth";
 
 import { useLocation } from "react-router-dom";
 import { recordReadingHistory } from "../../services/historyService";
+import {
+  fetchBookmarks as fetchBookmarksApi,
+  createBookmark as createBookmarkApi,
+  updateBookmark as updateBookmarkApi,
+  deleteBookmark as deleteBookmarkApi,
+} from "../../services/bookmarkService.js";
 
 const DEFAULT_POS_KEY = "reader:cfi";
 const DEFAULT_BM_KEY = "reader:bookmarks";
@@ -30,6 +36,8 @@ export default function EpubCoreViewer({ onBack }) {
     return user?.id ? `reader:user:${user.id}` : "reader:guest";
   }, [user?.id]);
 
+  const isAuthenticated = Boolean(user?.id);
+
   const posStorageKey = useMemo(() => {
     return bookId != null
       ? `${storagePrefix}:cfi:${bookId}`
@@ -42,13 +50,20 @@ export default function EpubCoreViewer({ onBack }) {
       : `${storagePrefix}:${DEFAULT_BM_KEY}`;
   }, [storagePrefix, bookId]);
 
-  const [bookmarks, setBookmarks] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(bmStorageKey) || "[]");
-    } catch {
-      return [];
-    }
-  });
+  const mapBookmarkFromApi = useCallback((bookmark) => {
+    const trimmedNote = bookmark?.note?.trim() ?? "";
+    return {
+      id: bookmark.id,
+      cfi: bookmark.locationInBook,
+      note:
+        trimmedNote ||
+        (bookmark.pageNumber ? `Trang ${bookmark.pageNumber}` : "Dấu trang"),
+      pageNumber: bookmark.pageNumber ?? null,
+      createdAt: bookmark.createdAt ?? null,
+    };
+  }, []);
+
+  const [bookmarks, setBookmarks] = useState([]);
 
   const [currentHref, setCurrentHref] = useState("");
 
@@ -92,13 +107,48 @@ export default function EpubCoreViewer({ onBack }) {
   }, [resolveTheme]);
 
   useEffect(() => {
-    try {
-      const savedBookmarks = JSON.parse(localStorage.getItem(bmStorageKey) || "[]");
-      setBookmarks(Array.isArray(savedBookmarks) ? savedBookmarks : []);
-    } catch {
-      setBookmarks([]);
+    let ignore = false;
+
+    if (!bookId || !isAuthenticated) {
+      try {
+        const savedBookmarks = JSON.parse(localStorage.getItem(bmStorageKey) || "[]");
+        if (!ignore) {
+          const normalized = Array.isArray(savedBookmarks)
+            ? savedBookmarks.map((b) => ({
+                ...b,
+                note:
+                  b.note ||
+                  (b.pageNumber ? `Trang ${b.pageNumber}` : "Dấu trang"),
+              }))
+            : [];
+          setBookmarks(normalized);
+        }
+      } catch {
+        if (!ignore) setBookmarks([]);
+      }
+      return () => {
+        ignore = true;
+      };
     }
-  }, [bmStorageKey]);
+
+    const loadBookmarks = async () => {
+      try {
+        const data = await fetchBookmarksApi(user.id, bookId);
+        if (ignore) return;
+        const next = Array.isArray(data) ? data.map(mapBookmarkFromApi) : [];
+        setBookmarks(next);
+      } catch (err) {
+        console.error("Failed to fetch bookmarks:", err);
+        if (!ignore) setBookmarks([]);
+      }
+    };
+
+    loadBookmarks();
+
+    return () => {
+      ignore = true;
+    };
+  }, [isAuthenticated, user?.id, bookId, bmStorageKey, mapBookmarkFromApi]);
 
   useEffect(() => {
     const savedCfi = localStorage.getItem(posStorageKey);
@@ -396,41 +446,116 @@ export default function EpubCoreViewer({ onBack }) {
   };
 
   // Bookmark
-  const toggleBookmark = () => {
-    if (!currentCfi) return;
-    const exists = bookmarks.some((b) => b.cfi === currentCfi);
-    let next;
-    if (exists) next = bookmarks.filter((b) => b.cfi !== currentCfi);
-    else {
-      const id = Date.now().toString(36); //Tạo id để sửa/xóa dễ
-      next = [
-        { id, cfi: currentCfi, note: chapterTitle || `Trang ${page}` },
-        ...bookmarks,
-      ].slice(0, 100);
+  const persistGuestBookmarks = useCallback((next) => {
+    try {
+      localStorage.setItem(bmStorageKey, JSON.stringify(next));
+    } catch (err) {
+      console.error("Failed to persist guest bookmarks:", err);
     }
-    setBookmarks(next);
-    localStorage.setItem(bmStorageKey, JSON.stringify(next));
+  }, [bmStorageKey]);
+
+  const toggleBookmark = async () => {
+    if (!currentCfi) return;
+    const existing = bookmarks.find((b) => b.cfi === currentCfi);
+
+    if (!isAuthenticated || bookId == null) {
+      let next;
+      if (existing) {
+        next = bookmarks.filter((b) => b.cfi !== currentCfi);
+      } else {
+        const id = Date.now().toString(36);
+        next = [
+          {
+            id,
+            cfi: currentCfi,
+            note: chapterTitle || `Trang ${page}`,
+            pageNumber: Number.isFinite(page) ? page : null,
+            createdAt: new Date().toISOString(),
+          },
+          ...bookmarks,
+        ].slice(0, 100);
+      }
+      setBookmarks(next);
+      persistGuestBookmarks(next);
+      return;
+    }
+
+    if (existing) {
+      try {
+        await deleteBookmarkApi(user.id, existing.id);
+        setBookmarks((prev) => prev.filter((b) => b.id !== existing.id));
+      } catch (err) {
+        console.error("Failed to remove bookmark:", err);
+      }
+      return;
+    }
+
+    const payload = {
+      pageNumber: Number.isFinite(page) ? page : null,
+      locationInBook: currentCfi,
+      note: chapterTitle || (Number.isFinite(page) ? `Trang ${page}` : "Dấu trang"),
+    };
+
+    try {
+      const created = await createBookmarkApi(user.id, bookId, payload);
+      const mapped = mapBookmarkFromApi(created);
+      setBookmarks((prev) => [mapped, ...prev].slice(0, 100));
+    } catch (err) {
+      console.error("Failed to create bookmark:", err);
+    }
   };
 
   /** đổi tên bookmark */
-  const renameBookmark = (id, newText) => {
-    setBookmarks((prev) => {
-      const next = prev.map((b) =>
-        b.id === id ? { ...b, note: newText || b.note } : b
-      );
-      localStorage.setItem(bmStorageKey, JSON.stringify(next));
-      return next;
-    });
+  const renameBookmark = async (id, newText) => {
+    const target = bookmarks.find((b) => b.id === id);
+    if (!target) return;
+
+    const trimmed = newText?.trim();
+    const fallbackNote =
+      target.note || (target.pageNumber ? `Trang ${target.pageNumber}` : "Dấu trang");
+    const nextNote = trimmed || fallbackNote;
+
     setEditingBmId(null);
+
+    if (!isAuthenticated || bookId == null) {
+      setBookmarks((prev) => {
+        const next = prev.map((b) =>
+          b.id === id ? { ...b, note: nextNote } : b
+        );
+        persistGuestBookmarks(next);
+        return next;
+      });
+      return;
+    }
+
+    try {
+      const updated = await updateBookmarkApi(user.id, id, { note: nextNote });
+      const mapped = mapBookmarkFromApi(updated);
+      setBookmarks((prev) =>
+        prev.map((b) => (b.id === id ? mapped : b))
+      );
+    } catch (err) {
+      console.error("Failed to rename bookmark:", err);
+    }
   };
 
   /** xóa bookmark */
-  const removeBookmark = (id) => {
-    setBookmarks((prev) => {
-      const next = prev.filter((b) => b.id !== id);
-      localStorage.setItem(bmStorageKey, JSON.stringify(next));
-      return next;
-    });
+  const removeBookmark = async (id) => {
+    if (!isAuthenticated || bookId == null) {
+      setBookmarks((prev) => {
+        const next = prev.filter((b) => b.id !== id);
+        persistGuestBookmarks(next);
+        return next;
+      });
+      return;
+    }
+
+    try {
+      await deleteBookmarkApi(user.id, id);
+      setBookmarks((prev) => prev.filter((b) => b.id !== id));
+    } catch (err) {
+      console.error("Failed to delete bookmark:", err);
+    }
   };
 
   /** toggle mở panel ở tab chỉ định */

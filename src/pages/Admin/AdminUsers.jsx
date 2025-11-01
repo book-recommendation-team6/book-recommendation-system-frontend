@@ -4,8 +4,9 @@ import SearchBar from "../../components/admin/SearchBar"
 import StatusFilter from "../../components/admin/StatusFilter"
 import SortSelect from "../../components/admin/SortSelect"
 import UserTable from "../../components/admin/UserTable"
-import { Modal, message } from "antd"
-import { getUser, banUser, unbanUser } from "../../services/manageUserService"
+import { Button, Modal, message } from "antd"
+import { getUser, banUser, unbanUser, banUsersBulk } from "../../services/manageUserService"
+import { Ban } from "lucide-react"
 
 const normalizeStatus = (status) => {
   if (!status) {
@@ -38,37 +39,32 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(false)
   const searchInitialized = useRef(false)
   const filterInitialized = useRef(false)
+  const sortInitialized = useRef(false)
 
-  const fetchUsers = async (page = 0, size = pagination.pageSize, keyword = "") => {
+  const fetchUsers = async (
+    page = 0,
+    size = pagination.pageSize,
+    keywordParam = searchQuery,
+    statusParam = statusFilter,
+    sortParam = sortBy
+  ) => {
     setLoading(true)
     try {
-      const response = await getUser(page, size, keyword)
+      const response = await getUser(page, size, keywordParam, statusParam, sortParam)
       const data = response.data || response
       const content = data?.content || []
-      const total = data?.totalElements || 0
 
-      let normalizedContent = content.map(user => ({
+      const normalizedContent = content.map(user => ({
         ...user,
         status: normalizeStatus(user.status),
       }))
 
-      // Client-side filtering by status
-      if (statusFilter) {
-        normalizedContent = normalizedContent.filter(user => 
-          user.status === statusFilter
-        )
-      }
-
-      // Client-side sorting
-      normalizedContent = sortUsers(normalizedContent, sortBy)
-
       setUsers(normalizedContent)
-      setPagination(prev => ({
-        ...prev,
-        pageSize: size,
-        total: statusFilter ? normalizedContent.length : total,
-        current: page + 1, // AntD uses 1-based, backend uses 0-based
-      }))
+      setPagination({
+        current: (data?.number ?? page) + 1,
+        pageSize: data?.size ?? size,
+        total: data?.totalElements ?? 0,
+      })
     } catch (error) {
       console.error("Error fetching users:", error)
       message.error("Không thể tải danh sách người dùng")
@@ -77,28 +73,8 @@ const AdminUsers = () => {
     }
   }
 
-  const sortUsers = (userList, sortType) => {
-    const sorted = [...userList]
-    switch (sortType) {
-      case "newest":
-        return sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-      case "oldest":
-        return sorted.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0))
-      case "name-asc":
-        return sorted.sort((a, b) => (a.username || "").localeCompare(b.username || ""))
-      case "name-desc":
-        return sorted.sort((a, b) => (b.username || "").localeCompare(a.username || ""))
-      case "email-asc":
-        return sorted.sort((a, b) => (a.email || "").localeCompare(b.email || ""))
-      case "email-desc":
-        return sorted.sort((a, b) => (b.email || "").localeCompare(a.email || ""))
-      default:
-        return sorted
-    }
-  }
-
   useEffect(() => {
-    fetchUsers(0, pagination.pageSize);
+    fetchUsers(0, pagination.pageSize, searchQuery, statusFilter, sortBy);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -109,7 +85,7 @@ const AdminUsers = () => {
     }
 
     const handler = setTimeout(() => {
-      fetchUsers(0, pagination.pageSize, searchQuery)
+      fetchUsers(0, pagination.pageSize, searchQuery, statusFilter, sortBy)
     }, 400)
 
     return () => clearTimeout(handler)
@@ -122,13 +98,17 @@ const AdminUsers = () => {
       return;
     }
 
-    fetchUsers(0, pagination.pageSize, searchQuery)
+    fetchUsers(0, pagination.pageSize, searchQuery, statusFilter, sortBy)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter])
 
   useEffect(() => {
-    // Re-sort current data when sort option changes
-    setUsers(prev => sortUsers(prev, sortBy))
+    if (!sortInitialized.current) {
+      sortInitialized.current = true;
+      return;
+    }
+
+    fetchUsers(0, pagination.pageSize, searchQuery, statusFilter, sortBy)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy])
 
@@ -136,11 +116,14 @@ const AdminUsers = () => {
   const handleTableChange = (paginationConfig) => {
     const page = paginationConfig.current - 1 // Convert to 0-based
     const size = paginationConfig.pageSize
-    fetchUsers(page, size, searchQuery)
+    fetchUsers(page, size, searchQuery, statusFilter, sortBy)
   }
 
   const [isBanModalOpen, setIsBanModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [selectedUserIds, setSelectedUserIds] = useState([])
+  const [isBulkBanModalOpen, setIsBulkBanModalOpen] = useState(false)
+  const [pendingBulkUserIds, setPendingBulkUserIds] = useState([])
 
   // Handle lock user action
   const handleLockUser = (user) => {
@@ -163,7 +146,8 @@ const AdminUsers = () => {
       }
       setIsBanModalOpen(false)
       setSelectedUser(null)
-      fetchUsers(pagination.current - 1, pagination.pageSize, searchQuery)
+      setSelectedUserIds((prev) => prev.filter((id) => id !== selectedUser.id))
+      fetchUsers(pagination.current - 1, pagination.pageSize, searchQuery, statusFilter, sortBy)
     } catch (error) {
       message.error("Cập nhật trạng thái người dùng thất bại!")
       console.error("Error updating user status:", error)
@@ -173,6 +157,39 @@ const AdminUsers = () => {
   const cancelBan = () => {
     setIsBanModalOpen(false)
     setSelectedUser(null)
+  }
+
+  const handleUserSelectionChange = (selectedKeys) => {
+    setSelectedUserIds(selectedKeys)
+  }
+
+  const handleBulkBanClick = () => {
+    if (!selectedUserIds.length) return
+    setPendingBulkUserIds(selectedUserIds)
+    setIsBulkBanModalOpen(true)
+  }
+
+  const confirmBulkBan = async () => {
+    if (!pendingBulkUserIds.length) {
+      return
+    }
+
+    try {
+      await banUsersBulk(pendingBulkUserIds)
+      message.success(`Chặn ${pendingBulkUserIds.length} người dùng thành công!`)
+      setIsBulkBanModalOpen(false)
+      setPendingBulkUserIds([])
+      setSelectedUserIds([])
+      fetchUsers(pagination.current - 1, pagination.pageSize, searchQuery, statusFilter, sortBy)
+    } catch (error) {
+      message.error("Chặn người dùng thất bại!")
+      console.error("Error banning users:", error)
+    }
+  }
+
+  const cancelBulkBan = () => {
+    setIsBulkBanModalOpen(false)
+    setPendingBulkUserIds([])
   }
 
   // Pagination configuration for UserTable
@@ -207,14 +224,43 @@ const AdminUsers = () => {
           />
         </div>
         
-        <UserTable 
+        {selectedUserIds.length > 0 && (
+          <div className="flex justify-end">
+            <Button
+              type="primary"
+              danger
+              onClick={handleBulkBanClick}
+              className="flex items-center gap-2"
+            >
+              <Ban className="w-4 h-4" />
+              Chặn tất cả ({selectedUserIds.length})
+            </Button>
+          </div>
+        )}
+
+        <UserTable
           users={users}
           onLockUser={handleLockUser}
           pagination={paginationConfig}
           onTableChange={handleTableChange}
           loading={loading}
+          selectedRowKeys={selectedUserIds}
+          onSelectionChange={handleUserSelectionChange}
         />
       </div>
+
+      <Modal
+        title="Chặn nhiều người dùng"
+        open={isBulkBanModalOpen}
+        onOk={confirmBulkBan}
+        onCancel={cancelBulkBan}
+        okText="Có"
+        cancelText="Không"
+        okButtonProps={{ danger: true }}
+        centered
+      >
+        <p>Bạn muốn chặn {pendingBulkUserIds.length} người dùng đã chọn?</p>
+      </Modal>
 
       <Modal
         title={selectedUser?.status === "BANNED" ? "Bỏ chặn người dùng" : "Chặn người dùng"}

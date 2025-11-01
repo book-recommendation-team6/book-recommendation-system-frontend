@@ -23,6 +23,7 @@ import AdminBooks from "./pages/Admin/AdminBooks"
 import AdminAddBook from "./pages/Admin/AdminAddbook"
 import AdminEditBook from "./pages/Admin/AdminEditbook"
 import AdminGenres from "./pages/Admin/AdminGenres"
+import AdminRecommendation from "./pages/Admin/AdminRecommendation"
 import OAuthRedirect from "./pages/Auth/OAuthRedirect.jsx";
 
 import Upload from "./pages/Upload.jsx"
@@ -125,6 +126,14 @@ function App() {
           element={
             <AdminRoute>
               <AdminGenres />
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path={PATHS.ADMIN.RECOMMENDATION} 
+          element={
+            <AdminRoute>
+              <AdminRecommendation />
             </AdminRoute>
           } 
         />

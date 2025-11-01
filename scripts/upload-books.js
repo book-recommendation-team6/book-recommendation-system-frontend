@@ -25,7 +25,7 @@ const CONFIG = {
 };
 
 // Đọc token từ command line argument hoặc environment variable
-const token = process.env.ADMIN_TOKEN || CONFIG.ADMIN_TOKEN;
+const token =  CONFIG.ADMIN_TOKEN;
 
 if (!token) {
   console.error('❌ Vui lòng cung cấp token admin:');

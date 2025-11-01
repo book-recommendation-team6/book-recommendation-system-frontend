@@ -13,10 +13,28 @@ export const getBooks = async (page = 0, size = 10) => {
   }
 };
 
-export const getBooksByGenre = async (genreId, page = 0, size = 10) => {
+export const getBooksByGenre = async (genreId, pageOrOptions = {}, size = 10) => {
   try {
+    let page = 0;
+    let pageSize = 10;
+    let sort = "";
+
+    if (typeof pageOrOptions === "number") {
+      page = pageOrOptions;
+      pageSize = size;
+    } else if (typeof pageOrOptions === "object" && pageOrOptions !== null) {
+      page = pageOrOptions.page ?? 0;
+      pageSize = pageOrOptions.size ?? 10;
+      sort = pageOrOptions.sort ?? "";
+    }
+
+    const params = { page, size: pageSize };
+    if (sort?.trim()) {
+      params.sort = sort.trim();
+    }
+
     const response = await api.get(`/books/genre/${genreId}`, {
-      params: { page, size }
+      params
     });
     return response;
   } catch (error) {
@@ -88,6 +106,43 @@ export const deleteBook = async (bookId) => {
     return response;
   } catch (error) {
     console.error("Delete book failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const deleteBooksBulk = async (bookIds = []) => {
+  try {
+    return await api.delete("/admin/books", {
+      data: { ids: bookIds },
+    });
+  } catch (error) {
+    console.error("Bulk delete books failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getAdminBooks = async ({
+  page = 0,
+  size = 10,
+  keyword = "",
+  genreId,
+  sort = "",
+} = {}) => {
+  try {
+    const params = { page, size };
+    if (keyword?.trim()) {
+      params.keyword = keyword.trim();
+    }
+    if (genreId !== undefined && genreId !== null && genreId !== "") {
+      params.genreId = genreId;
+    }
+    if (sort?.trim()) {
+      params.sort = sort.trim();
+    }
+
+    return await api.get("/admin/books", { params });
+  } catch (error) {
+    console.error("Get admin books failed:", error.response?.data || error.message);
     throw error;
   }
 };

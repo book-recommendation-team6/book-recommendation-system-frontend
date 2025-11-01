@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ConfigProvider, Button, Table } from 'antd';
+import React from 'react';
+import { ConfigProvider, Table, Button } from 'antd';
 
 const statusLabels = {
   ACTIVE: { text: 'Đã kích hoạt', className: 'text-teal-500 font-medium' },
@@ -30,7 +30,15 @@ const resolveStatusKey = (status) => {
   return 'UNKNOWN';
 };
 
-const UserTable = ({ users, onLockUser, pagination, onTableChange, loading: tableLoading }) => {
+const UserTable = ({
+  users,
+  onLockUser,
+  pagination,
+  onTableChange,
+  loading: tableLoading,
+  selectedRowKeys = [],
+  onSelectionChange,
+}) => {
   const columns = [
     { title: 'Username', dataIndex: 'username', render: (_, record) => record.username || record.name || '-' },
     { title: 'User id', dataIndex: 'id' },
@@ -63,43 +71,22 @@ const UserTable = ({ users, onLockUser, pagination, onTableChange, loading: tabl
       },
     },
   ];
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const start = () => {
-    setLoading(true);
-    // ajax request after empty completing
-    setTimeout(() => {
-      setSelectedRowKeys([]);
-      setLoading(false);
-    }, 1000);
-  };
-
-  const onSelectChange = newSelectedRowKeys => {
-    setSelectedRowKeys(newSelectedRowKeys);
-  };
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: onSelectChange,
-  };
-  const hasSelected = selectedRowKeys.length > 0;
+  const rowSelection = onSelectionChange
+    ? {
+        selectedRowKeys,
+        onChange: onSelectionChange,
+      }
+    : undefined;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Button type="primary" onClick={start} disabled={!hasSelected} loading={loading}>
-          Reload
-        </Button>
-        {hasSelected ? `Selected ${selectedRowKeys.length} items` : null}
-      </div>
-      <ConfigProvider
-        theme={{
-          components: {
-            Table: {
-             headerBg: '#E7E7E7',
-            },
+    <ConfigProvider
+      theme={{
+        components: {
+          Table: {
+            headerBg: '#E7E7E7',
           },
-        }}
-      >
+        },
+      }}
+    >
       <Table
         rowKey={(record) => record.id}
         rowSelection={rowSelection}
@@ -110,8 +97,7 @@ const UserTable = ({ users, onLockUser, pagination, onTableChange, loading: tabl
         dataSource={users}
         size="large"
       />
-      </ConfigProvider>
-    </div>
+    </ConfigProvider>
 
   )
 }

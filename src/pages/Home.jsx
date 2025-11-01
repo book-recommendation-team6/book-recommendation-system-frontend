@@ -72,7 +72,7 @@ const Home = () => {
   // Load books by genre
   const loadGenreBooks = useCallback(async (genreId, setter) => {
     try {
-      const response = await getBooksByGenre(genreId, 0, DEFAULT_PAGE_SIZE);
+      const response = await getBooksByGenre(genreId, { page: 0, size: DEFAULT_PAGE_SIZE });
       const books = response?.data?.content || response?.content || [];
       setter(Array.isArray(books) ? books : []);
     } catch {

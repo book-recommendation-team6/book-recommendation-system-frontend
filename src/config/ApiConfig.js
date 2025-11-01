@@ -5,7 +5,7 @@ export const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 100000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -29,6 +29,7 @@ api.interceptors.response.use(
     return response.data;
   },
   (error) => {
+    console.log("API response error:", error);
     const { status, config } = error.response;
     if (
       status === 401 &&
