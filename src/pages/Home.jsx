@@ -151,14 +151,20 @@ const Home = () => {
           <>
             {/* All Books Carousel */}
             {allBooks.length > 0 && (
-              <BookCarousel books={allBooks} title="SÁCH DÀNH CHO BẠN" />
+              <BookCarousel books={allBooks} title="SÁCH DÀNH CHO BẠN" subtitle={false} />
             )}
 
             {/* Genre 1 Carousel with Lazy Loading */}
             <div ref={genre1Ref} className="min-h-[100px]">
               {genre1Loaded ? (
                 genre1Books.length > 0 ? (
-                  <BookCarousel books={genre1Books} title="TÀI CHÍNH" />
+                  <BookCarousel 
+                    books={genre1Books} 
+                    title="TÀI CHÍNH" 
+                    genreId={11}
+                    genreName="Tài chính"
+                    subtitle={true}
+                  />
                 ) : (
                   <div className="py-8 text-center">
                     <p className="text-gray-600 dark:text-gray-400">Không có sách thể loại Tài chính</p>
@@ -176,7 +182,13 @@ const Home = () => {
             <div ref={genre2Ref} className="min-h-[100px]">
               {genre2Loaded ? (
                 genre2Books.length > 0 ? (
-                  <BookCarousel books={genre2Books} title="KỸ NĂNG SỐNG" />
+                  <BookCarousel 
+                    books={genre2Books} 
+                    title="KỸ NĂNG SỐNG" 
+                    genreId={6}
+                    genreName="Kỹ năng sống"
+                    subtitle={true}
+                  />
                 ) : (
                   <div className="py-8 text-center">
                     <p className="text-gray-600 dark:text-gray-400">Không có sách thể loại Kỹ năng sống</p>
@@ -194,7 +206,13 @@ const Home = () => {
             <div ref={genre3Ref} className="min-h-[100px]">
               {genre3Loaded ? (
                 genre3Books.length > 0 ? (
-                  <BookCarousel books={genre3Books} title="TIỂU THUYẾT" />
+                  <BookCarousel 
+                    books={genre3Books} 
+                    title="TIỂU THUYẾT" 
+                    genreId={9}
+                    genreName="Tiểu thuyết"
+                    subtitle={true}
+                  />
                 ) : (
                   <div className="py-8 text-center">
                     <p className="text-gray-600 dark:text-gray-400">Không có sách thể loại Lịch sử</p>

@@ -8,6 +8,7 @@ import { getBooksByGenre } from "../services/manageBookService";
 const BOOKS_PER_PAGE = 12;
 
 const CategoryBooks = () => {
+
   const { categoryId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -47,7 +48,9 @@ const CategoryBooks = () => {
         setGenresLoading(false);
       }
     };
-
+    
+    // Scroll to top when category changes
+    window.scrollTo(0, 0);
     fetchGenreInfo();
   }, [categoryId, initialCategoryName]);
 

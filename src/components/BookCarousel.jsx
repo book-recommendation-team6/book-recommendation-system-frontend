@@ -5,7 +5,7 @@ import { Search, ChevronDown, Facebook, Twitter, Menu, X, ChevronLeft, ChevronRi
 import BookCard from './BookCard';
 import SectionHeader from './SectionHeader';
 
-const BookCarousel = ({ books, title }) => {
+const BookCarousel = ({ books, title, genreId, genreName, subtitle }) => {
   const scrollContainerRef = React.useRef(null);
 
   const scroll = (direction) => {
@@ -18,7 +18,12 @@ const BookCarousel = ({ books, title }) => {
 
   return (
     <div className="mb-12">
-        <SectionHeader title={title} subtitle={true} />
+        <SectionHeader 
+          title={title} 
+          subtitle={subtitle} 
+          genreId={genreId}
+          genreName={genreName || title}
+        />
       {/* <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
         <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
