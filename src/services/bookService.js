@@ -25,6 +25,21 @@ export const getSimilarBooks = async (bookId, limit = 10) => {
   }
 };
 
+export const getDiversityBooks = async (bookId, { limit = 5 } = {}) => {
+  try {
+    const response = await api.get('/diversity-books', {
+      params: {
+        bookId,
+        limit
+      }
+    });
+    return response;
+  } catch (error) {
+    console.error("Failed to fetch diversity books:", error);
+    throw error;
+  }
+};
+
 export const getBookDetail = async (bookId) => {
   try {
     const response = await api.get(`/books/${bookId}`);

@@ -2,12 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Hero from "../components/Hero";
 import BookCarousel from "../components/BookCarousel";
+import SectionHeader from "../components/SectionHeader";
 import MainLayout from "../layout/MainLayout";
 import { getBooks, getBooksByGenre } from "../services/manageBookService";
-import { getRecommendedBooks } from "../services/bookService";
+import { getRecommendedBooks, getDiversityBooks } from "../services/bookService";
+import useAuth from "../hook/useAuth";
 
 const DEFAULT_PAGE_SIZE = 12;
-import useAuth from "../hook/useAuth";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -17,6 +18,11 @@ const Home = () => {
   const [genre3Books, setGenre3Books] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDiversity, setShowDiversity] = useState(false);
+  const [diversityBooks, setDiversityBooks] = useState([]);
+  const [diversityLoading, setDiversityLoading] = useState(false);
+  const [diversityError, setDiversityError] = useState(null);
+  const [anchorBookId, setAnchorBookId] = useState(null);
   
   const { user } = useAuth();
   const userId = user?.id;
@@ -69,6 +75,68 @@ const Home = () => {
     loadAllBooks();
   }, [userId]);
   console.log("All books:", allBooks);
+
+  // Update anchor book when recommendations change
+  useEffect(() => {
+    if (allBooks.length > 0) {
+      setAnchorBookId(allBooks[0]?.id ?? null);
+    } else {
+      setAnchorBookId(null);
+    }
+
+    setDiversityBooks([]);
+    setDiversityError(null);
+  }, [allBooks]);
+
+  // Load diversity books when toggled on
+  useEffect(() => {
+    let isActive = true;
+
+    if (!showDiversity) {
+      setDiversityLoading(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const loadDiversity = async () => {
+      if (!showDiversity) return;
+
+      if (!anchorBookId) {
+        setDiversityBooks([]);
+        setDiversityError("Không tìm thấy sách để đa dạng hóa.");
+        setDiversityLoading(false);
+        return;
+      }
+
+      setDiversityLoading(true);
+      setDiversityError(null);
+
+      try {
+        const response = await getDiversityBooks(anchorBookId, { limit: 6 });
+        if (!isActive) return;
+
+        const payload = response?.data || {};
+        const items = Array.isArray(payload.items) ? payload.items : [];
+        setDiversityBooks(items);
+      } catch (err) {
+        if (!isActive) return;
+        console.error("Error loading diversity books:", err);
+        setDiversityBooks([]);
+        setDiversityError("Không thể tải sách đa dạng. Vui lòng thử lại.");
+      } finally {
+        if (isActive) {
+          setDiversityLoading(false);
+        }
+      }
+    };
+
+    loadDiversity();
+
+    return () => {
+      isActive = false;
+    };
+  }, [showDiversity, anchorBookId, getDiversityBooks]);
   // Load books by genre
   const loadGenreBooks = useCallback(async (genreId, setter) => {
     try {
@@ -149,9 +217,56 @@ const Home = () => {
 
         {!loading && !error && (
           <>
-            {/* All Books Carousel */}
+            {/* Recommended Books with Diversity toggle */}
             {allBooks.length > 0 && (
-              <BookCarousel books={allBooks} title="SÁCH DÀNH CHO BẠN" subtitle={false} />
+              <section className="mb-12">
+                <SectionHeader
+                  title="SÁCH DÀNH CHO BẠN"
+                  subtitle={false}
+                  extra={
+                    <button
+                      onClick={() => setShowDiversity((prev) => !prev)}
+                      className="relative flex items-center gap-2 rounded-full border border-blue-500 px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:border-blue-400 dark:text-blue-200 dark:hover:bg-blue-950/50"
+                    >
+                      {diversityLoading && showDiversity && (
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent dark:border-blue-200"></span>
+                      )}
+                      {showDiversity ? "Thu gọn" : "Đa dạng hóa"}
+                    </button>
+                  }
+                />
+
+                <div className="mt-6">
+                  {showDiversity ? (
+                    <div className="grid gap-8 lg:grid-cols-2">
+                      <div>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-100">Đề xuất dành riêng cho bạn</h3>
+                        <BookCarousel books={allBooks} showHeader={false} className="mb-0" />
+                      </div>
+                      <div>
+                        <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-100">Khám phá đa dạng</h3>
+                        {diversityLoading ? (
+                          <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                            <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent dark:border-blue-200"></div>
+                          </div>
+                        ) : diversityError ? (
+                          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+                            {diversityError}
+                          </div>
+                        ) : diversityBooks.length > 0 ? (
+                          <BookCarousel books={diversityBooks} showHeader={false} className="mb-0" />
+                        ) : (
+                          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300">
+                            Chưa có sách đa dạng để hiển thị.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <BookCarousel books={allBooks} showHeader={false} className="mb-0" />
+                  )}
+                </div>
+              </section>
             )}
 
             {/* Genre 1 Carousel with Lazy Loading */}
