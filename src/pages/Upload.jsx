@@ -15,7 +15,7 @@ export default function UploadDirect() {
     fd.append("file", file);
 
     try {
-      const { data } = await axiosClient.post("/api/v1/upload", fd, {
+      const { data } = await axiosClient.post("/upload", fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMsg(`OK: ${data.key}`);

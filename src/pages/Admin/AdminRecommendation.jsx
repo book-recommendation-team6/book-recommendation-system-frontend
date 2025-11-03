@@ -1,8 +1,24 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, Button, Statistic, Row, Col, Alert, Tag, Spin, Modal, message, Progress, Switch, InputNumber, Descriptions, Tabs } from 'antd';
+import {
+  Card,
+  Button,
+  Statistic,
+  Row,
+  Col,
+  Alert,
+  Tag,
+  Spin,
+  Modal,
+  message,
+  Progress,
+  Switch,
+  InputNumber,
+  Descriptions,
+  Space,
+  Tabs,
+} from 'antd';
 import {
   ReloadOutlined,
-  InfoCircleOutlined,
   CheckCircleOutlined,
   WarningOutlined,
   SyncOutlined,
@@ -12,7 +28,7 @@ import {
   LineChartOutlined,
   ThunderboltOutlined,
   SettingOutlined,
-  PlayCircleOutlined
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import {
   refreshModelRegistry,
@@ -24,11 +40,9 @@ import {
   disableOnlineLearning,
   triggerIncrementalUpdate,
   getAvailableRecommendationModels,
-  setActiveRecommendationModel
+  setActiveRecommendationModel,
 } from '../../services/recommendationService';
 import AdminLayout from '../../layout/AdminLayout';
-
-const { TabPane } = Tabs;
 
 const formatMetricValue = (value, digits = 4) => {
   if (value === null || value === undefined) {
@@ -80,7 +94,7 @@ const AdminRecommendation = () => {
     const initModels = async () => {
       try {
         setLoading(true);
-        const { models, activeKey } = await refreshModelRegistry();
+        const { models, activeKey } = await refreshModelRegistry(true);
         if (cancelled) {
           return;
         }
@@ -106,6 +120,83 @@ const AdminRecommendation = () => {
     };
   }, []);
 
+  const loadAllData = useCallback(async () => {
+    if (!activeModelKey) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const [info, health] = await Promise.all([
+        getModelInfo(),
+        getHealthStatus(),
+      ]);
+      setModelInfo(info);
+      setHealthStatus(health);
+
+      if (activeModelSupportsOnlineLearning) {
+        try {
+          const olStatus = await getOnlineLearningStatus();
+          setOnlineLearningStatus(olStatus);
+          if (olStatus && typeof olStatus.buffer_capacity === 'number') {
+            setBufferSize(olStatus.buffer_capacity);
+          }
+        } catch (error) {
+          console.error('Failed to get online learning status:', error);
+          setOnlineLearningStatus(null);
+        }
+      } else {
+        setOnlineLearningStatus(null);
+      }
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      message.error('Không thể tải thông tin hệ thống');
+      setModelInfo(null);
+      setHealthStatus(null);
+      setOnlineLearningStatus(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeModelKey, activeModelSupportsOnlineLearning]);
+
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
+
+  useEffect(() => {
+    let interval;
+
+    const isCurrentlyRetraining = modelInfo?.is_retraining === true;
+
+    if (isCurrentlyRetraining) {
+      interval = setInterval(loadAllData, 3000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [modelInfo?.is_retraining, loadAllData]);
+
+  useEffect(() => {
+    const syncBufferSize = () => {
+      if (onlineLearningStatus && typeof onlineLearningStatus.buffer_capacity === 'number') {
+        setBufferSize(onlineLearningStatus.buffer_capacity);
+      }
+    };
+    syncBufferSize();
+  }, [onlineLearningStatus]);
+
+  const handleModelSwitch = (modelKey) => {
+    if (!modelKey || modelKey === selectedModelKey) {
+      return;
+    }
+
+    setSelectedModelKey(modelKey);
+    setActiveTab('overview');
+  };
+
   useEffect(() => {
     if (!selectedModelKey || selectedModelKey === activeModelKey) {
       return;
@@ -121,7 +212,7 @@ const AdminRecommendation = () => {
           return;
         }
 
-        setActiveModelKey(info.key);
+        setActiveModelKey(info?.key ?? selectedModelKey);
         const updatedModels = await getAvailableRecommendationModels(true);
         if (cancelled) {
           return;
@@ -131,7 +222,7 @@ const AdminRecommendation = () => {
         setModelInfo(null);
         setHealthStatus(null);
         setOnlineLearningStatus(null);
-        message.success(`Đã chuyển sang ${info.label || info.key}`);
+        message.success(`Đã chuyển sang ${info?.label || info?.key || selectedModelKey}`);
       } catch (error) {
         if (!cancelled) {
           console.error('Failed to switch recommendation model:', error);
@@ -152,82 +243,6 @@ const AdminRecommendation = () => {
     };
   }, [selectedModelKey, activeModelKey]);
 
-  // Load all data
-  const loadAllData = useCallback(async () => {
-    if (!activeModelKey) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const [info, health] = await Promise.all([
-        getModelInfo(),
-        getHealthStatus()
-      ]);
-      setModelInfo(info);
-      setHealthStatus(health);
-
-      if (activeModelSupportsOnlineLearning) {
-        try {
-          const olStatus = await getOnlineLearningStatus();
-          setOnlineLearningStatus(olStatus);
-        } catch (error) {
-          console.error('Failed to get online learning status:', error);
-          setOnlineLearningStatus(null);
-        }
-      } else {
-        setOnlineLearningStatus(null);
-      }
-    } catch (error) {
-      console.error('Failed to load data:', error);
-      message.error('Không thể tải thông tin hệ thống');
-      setModelInfo(null);
-      setHealthStatus(null);
-      setOnlineLearningStatus(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeModelKey, activeModelSupportsOnlineLearning]);
-
-  // Initial load
-  useEffect(() => {
-    loadAllData();
-  }, [loadAllData]);
-
-  // Auto refresh when retraining
-  useEffect(() => {
-    let interval;
-    
-    // Check if currently retraining based on backend status
-    const isCurrentlyRetraining = modelInfo?.is_retraining === true;
-    
-    if (isCurrentlyRetraining) {
-      // Start auto-refresh during retrain
-      console.log('🔄 Starting auto-refresh (retrain in progress)...');
-      interval = setInterval(loadAllData, 3000);
-    } else {
-      // Not retraining, ensure no interval
-      console.log('✅ Retrain completed or not in progress, no auto-refresh');
-    }
-    
-    return () => {
-      if (interval) {
-        console.log('🛑 Clearing auto-refresh interval');
-        clearInterval(interval);
-      }
-    };
-  }, [modelInfo?.is_retraining, loadAllData]);
-
-  const handleModelSwitch = (modelKey) => {
-    if (!modelKey || modelKey === selectedModelKey) {
-      return;
-    }
-
-    setSelectedModelKey(modelKey);
-    setActiveTab('overview');
-  };
-
-  // Handle retrain
   const handleRetrain = () => {
     Modal.confirm({
       title: 'Xác nhận retrain toàn bộ model',
@@ -238,8 +253,8 @@ const AdminRecommendation = () => {
           <p>Quá trình này sẽ:</p>
           <ul>
             <li>Tải lại toàn bộ dữ liệu từ database</li>
-            <li>Huấn luyện lại Implicit ALS model (Collaborative Filtering)</li>
-            <li>Huấn luyện lại SBERT model (Content-Based)</li>
+            <li>Huấn luyện lại {isImplicitModel ? 'Implicit ALS model' : 'Neural CF model'}</li>
+            <li>Huấn luyện lại SBERT model</li>
             <li>Tạo lại user profiles cho SBERT</li>
             <li>Thay thế model hiện tại bằng model mới</li>
           </ul>
@@ -254,8 +269,6 @@ const AdminRecommendation = () => {
           setRetraining(true);
           await triggerRetrain();
           message.success('Đã bắt đầu retrain model! Theo dõi tiến trình bên dưới.');
-          
-          // Force reload to get updated is_retraining status
           await loadAllData();
         } catch (error) {
           console.error('Failed to trigger retrain:', error);
@@ -263,11 +276,10 @@ const AdminRecommendation = () => {
         } finally {
           setRetraining(false);
         }
-      }
+      },
     });
   };
 
-  // Handle Online Learning toggle
   const handleOnlineLearningToggle = async (enabled) => {
     if (!selectedModelSupportsOnlineLearning) {
       message.info('Online Learning chưa hỗ trợ cho mô hình này.');
@@ -286,9 +298,9 @@ const AdminRecommendation = () => {
           buffer_capacity: appliedSize,
           buffer_full: false,
           note:
-            result?.note ??
-            prev?.note ??
-            'Only SBERT profiles are updated incrementally. Collaborative model requires full retrain.',
+            result?.note
+            ?? prev?.note
+            ?? `Only SBERT profiles are updated incrementally. ${collaborativeModelFullLabel} requires full retrain.`,
         }));
       } else {
         await disableOnlineLearning();
@@ -309,7 +321,6 @@ const AdminRecommendation = () => {
     }
   };
 
-  // Handle apply buffer size
   const handleApplyBufferSize = async () => {
     if (!selectedModelSupportsOnlineLearning) {
       message.info('Online Learning chưa hỗ trợ cho mô hình này.');
@@ -321,8 +332,7 @@ const AdminRecommendation = () => {
         message.error('Buffer size phải nằm trong khoảng 10-1000');
         return;
       }
-      
-      // Disable first, then enable with new buffer size
+
       await disableOnlineLearning();
       const result = await enableOnlineLearning(bufferSize);
       const appliedSize = result?.buffer_size ?? bufferSize;
@@ -333,9 +343,9 @@ const AdminRecommendation = () => {
         enabled: true,
         buffer_capacity: appliedSize,
         note:
-          result?.note ??
-          prev?.note ??
-          'Only SBERT profiles are updated incrementally. Collaborative model requires full retrain.',
+          result?.note
+          ?? prev?.note
+          ?? `Only SBERT profiles are updated incrementally. ${collaborativeModelFullLabel} requires full retrain.`,
       }));
       await loadAllData();
     } catch (error) {
@@ -344,7 +354,6 @@ const AdminRecommendation = () => {
     }
   };
 
-  // Handle incremental update
   const handleIncrementalUpdate = async (force = false) => {
     if (!selectedModelSupportsOnlineLearning) {
       message.info('Online Learning chưa hỗ trợ cho mô hình này.');
@@ -354,13 +363,13 @@ const AdminRecommendation = () => {
     try {
       setUpdatingBuffer(true);
       const result = await triggerIncrementalUpdate(force);
-      
+
       if (result.status === 'updated') {
         message.success(`Đã cập nhật SBERT user profiles! (${result.interactions_processed} tương tác)`);
       } else {
         message.info(result.message || 'Không có cập nhật nào được thực hiện');
       }
-      
+
       await loadAllData();
     } catch (error) {
       console.error('Failed to trigger incremental update:', error);
@@ -370,7 +379,6 @@ const AdminRecommendation = () => {
     }
   };
 
-  // Render status tag
   const renderStatusTag = () => {
     if (!healthStatus) return null;
 
@@ -379,9 +387,9 @@ const AdminRecommendation = () => {
       healthy: { color: 'success', icon: <CheckCircleOutlined />, text: 'Hoạt động bình thường' },
       retraining: { color: 'processing', icon: <SyncOutlined spin />, text: 'Đang retrain...' },
       no_model: { color: 'warning', icon: <WarningOutlined />, text: 'Model chưa được load' },
-      error: { color: 'error', icon: <WarningOutlined />, text: 'Lỗi' }
+      error: { color: 'error', icon: <WarningOutlined />, text: 'Lỗi' },
     };
-    
+
     const config = statusConfig[healthStatus.status] || statusConfig.error;
 
     return (
@@ -392,6 +400,10 @@ const AdminRecommendation = () => {
   };
 
   const renderOverviewStats = () => {
+    if (!modelInfo) {
+      return null;
+    }
+
     if (selectedModelKey === 'implicit') {
       return (
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -518,6 +530,10 @@ const AdminRecommendation = () => {
   };
 
   const renderModelDetails = () => {
+    if (!modelInfo) {
+      return null;
+    }
+
     const ncfTrainingParams = modelInfo?.ncf_model?.training_params ?? {};
     const ncfEvaluationMetrics = modelInfo?.ncf_model?.evaluation_metrics;
     const ncfLastTrainingLoss = modelInfo?.ncf_model?.last_training_loss;
@@ -527,12 +543,12 @@ const AdminRecommendation = () => {
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={12}>
             <Card
-              title={
+              title={(
                 <span>
                   <UserOutlined style={{ marginRight: 8 }} />
                   Implicit ALS Model
                 </span>
-              }
+              )}
               extra={
                 modelInfo?.cf_model ? (
                   <Tag color="success">Active</Tag>
@@ -544,27 +560,28 @@ const AdminRecommendation = () => {
               {modelInfo?.cf_model ? (
                 <Descriptions bordered column={1} size="small">
                   <Descriptions.Item label="Users">
-                    {modelInfo.cf_model.num_users.toLocaleString()}
+                    {modelInfo.cf_model.num_users?.toLocaleString?.() ?? modelInfo.cf_model.num_users}
                   </Descriptions.Item>
                   <Descriptions.Item label="Items">
-                    {modelInfo.cf_model.num_items.toLocaleString()}
+                    {modelInfo.cf_model.num_items?.toLocaleString?.() ?? modelInfo.cf_model.num_items}
                   </Descriptions.Item>
                   <Descriptions.Item label="Factors">
-                    {modelInfo.cf_model.factors}
+                    {modelInfo.cf_model.factors ?? 'N/A'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Iterations">
-                    {modelInfo.cf_model.iterations}
+                    {modelInfo.cf_model.iterations ?? 'N/A'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Regularization">
-                    {modelInfo.cf_model.regularization}
+                    {modelInfo.cf_model.regularization ?? 'N/A'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Matrix NNZ">
-                    {modelInfo.cf_model.matrix_nnz.toLocaleString()}
+                    {modelInfo.cf_model.matrix_nnz?.toLocaleString?.() ?? modelInfo.cf_model.matrix_nnz}
                   </Descriptions.Item>
                   <Descriptions.Item label="Density">
                     {(
-                      (modelInfo.cf_model.matrix_nnz /
-                      (modelInfo.cf_model.num_users * modelInfo.cf_model.num_items)) * 100
+                      (modelInfo.cf_model.matrix_nnz
+                        / Math.max(1, (modelInfo.cf_model.num_users || 1) * (modelInfo.cf_model.num_items || 1)))
+                      * 100
                     ).toFixed(4)}%
                   </Descriptions.Item>
                 </Descriptions>
@@ -579,12 +596,12 @@ const AdminRecommendation = () => {
 
           <Col xs={24} lg={12}>
             <Card
-              title={
+              title={(
                 <span>
                   <BookOutlined style={{ marginRight: 8 }} />
                   SBERT Model
                 </span>
-              }
+              )}
               extra={
                 modelInfo?.content_model ? (
                   <Tag color="success">Active</Tag>
@@ -599,10 +616,10 @@ const AdminRecommendation = () => {
                     {modelInfo.content_model.model_name}
                   </Descriptions.Item>
                   <Descriptions.Item label="Books">
-                    {modelInfo.content_model.num_books.toLocaleString()}
+                    {modelInfo.content_model.num_books?.toLocaleString?.() ?? modelInfo.content_model.num_books}
                   </Descriptions.Item>
                   <Descriptions.Item label="User Profiles">
-                    {modelInfo.content_model.num_user_profiles.toLocaleString()}
+                    {modelInfo.content_model.num_user_profiles?.toLocaleString?.() ?? modelInfo.content_model.num_user_profiles}
                   </Descriptions.Item>
                   <Descriptions.Item label="Embedding Dim">
                     {modelInfo.content_model.embedding_dim || 'N/A'}
@@ -624,12 +641,12 @@ const AdminRecommendation = () => {
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
           <Card
-            title={
+            title={(
               <span>
                 <UserOutlined style={{ marginRight: 8 }} />
                 Neural CF (NCF)
               </span>
-            }
+            )}
             extra={
               modelInfo?.ncf_model ? (
                 <Tag color="success">Active</Tag>
@@ -641,13 +658,13 @@ const AdminRecommendation = () => {
             {modelInfo?.ncf_model ? (
               <Descriptions bordered column={1} size="small">
                 <Descriptions.Item label="Users">
-                  {modelInfo.ncf_model.num_users.toLocaleString()}
+                  {modelInfo.ncf_model.num_users?.toLocaleString?.() ?? modelInfo.ncf_model.num_users}
                 </Descriptions.Item>
                 <Descriptions.Item label="Items">
-                  {modelInfo.ncf_model.num_items.toLocaleString()}
+                  {modelInfo.ncf_model.num_items?.toLocaleString?.() ?? modelInfo.ncf_model.num_items}
                 </Descriptions.Item>
                 <Descriptions.Item label="GMF Dimension">
-                  {modelInfo.ncf_model.gmf_dim}
+                  {modelInfo.ncf_model.gmf_dim ?? 'N/A'}
                 </Descriptions.Item>
                 <Descriptions.Item label="MLP Layers">
                   {modelInfo.ncf_model.mlp_dims && modelInfo.ncf_model.mlp_dims.length > 0
@@ -695,12 +712,12 @@ const AdminRecommendation = () => {
 
         <Col xs={24} lg={12}>
           <Card
-            title={
+            title={(
               <span>
                 <BookOutlined style={{ marginRight: 8 }} />
                 SBERT Model
               </span>
-            }
+            )}
             extra={
               modelInfo?.content_model ? (
                 <Tag color="success">Active</Tag>
@@ -715,10 +732,10 @@ const AdminRecommendation = () => {
                   {modelInfo.content_model.model_name}
                 </Descriptions.Item>
                 <Descriptions.Item label="Books">
-                  {modelInfo.content_model.num_books.toLocaleString()}
+                  {modelInfo.content_model.num_books?.toLocaleString?.() ?? modelInfo.content_model.num_books}
                 </Descriptions.Item>
                 <Descriptions.Item label="User Profiles">
-                  {modelInfo.content_model.num_user_profiles.toLocaleString()}
+                  {modelInfo.content_model.num_user_profiles?.toLocaleString?.() ?? modelInfo.content_model.num_user_profiles}
                 </Descriptions.Item>
                 <Descriptions.Item label="Embedding Dim">
                   {modelInfo.content_model.embedding_dim || 'N/A'}
@@ -752,7 +769,7 @@ const AdminRecommendation = () => {
   const bufferCapacity = onlineLearningStatus?.buffer_capacity || 0;
   const bufferSizeValue = onlineLearningStatus?.buffer_size || 0;
   const bufferProgress = onlineLearningStatus?.enabled && bufferCapacity > 0
-    ? (bufferSizeValue / bufferCapacity) * 100
+    ? Math.min(100, (bufferSizeValue / bufferCapacity) * 100)
     : 0;
   const onlineLearningTagColor = !selectedModelSupportsOnlineLearning
     ? 'default'
@@ -765,22 +782,225 @@ const AdminRecommendation = () => {
       ? `Online Learning: ${onlineLearningEnabled ? 'Bật' : 'Tắt'}`
       : 'Online Learning: Đang tải';
 
+  const overviewTabContent = (
+    <>
+      {renderOverviewStats()}
+      {renderModelDetails()}
+    </>
+  );
+
+  const onlineLearningTabContent = selectedModelSupportsOnlineLearning ? (
+    <>
+      <Alert
+        message="Lưu ý về Online Learning"
+        description={(
+          <div>
+            <p><strong>Online Learning chỉ cập nhật SBERT user profiles</strong>, không cập nhật {collaborativeModelFullLabel}.</p>
+            <p>Để cập nhật {collaborativeModelLabel} model, bạn cần thực hiện <strong>Retrain Toàn Bộ</strong>.</p>
+          </div>
+        )}
+        type="info"
+        showIcon
+        style={{ marginBottom: 24 }}
+      />
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <Card
+            title={(
+              <span>
+                <SettingOutlined style={{ marginRight: 8 }} />
+                Điều khiển Online Learning
+              </span>
+            )}
+          >
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 14, fontWeight: 500 }}>Trạng thái:</span>
+                <Switch
+                  checked={onlineLearningStatus?.enabled}
+                  onChange={handleOnlineLearningToggle}
+                  checkedChildren="Bật"
+                  unCheckedChildren="Tắt"
+                />
+              </div>
+
+              {onlineLearningStatus?.enabled && (
+                <>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
+                      Buffer Progress: {onlineLearningStatus.buffer_size} / {onlineLearningStatus.buffer_capacity}
+                    </div>
+                    <Progress
+                      percent={bufferProgress}
+                      status={onlineLearningStatus.buffer_full ? 'exception' : 'active'}
+                      strokeColor={onlineLearningStatus.buffer_full ? '#ff4d4f' : '#1890ff'}
+                    />
+                    {onlineLearningStatus.buffer_full && (
+                      <div style={{ fontSize: 12, color: '#ff4d4f', marginTop: 4 }}>
+                        ⚠️ Buffer đã đầy! Nên trigger update ngay.
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ marginBottom: 16 }}>
+                    <Button
+                      type="primary"
+                      icon={<PlayCircleOutlined />}
+                      onClick={() => handleIncrementalUpdate(false)}
+                      loading={updatingBuffer}
+                      disabled={!onlineLearningStatus.buffer_full}
+                      block
+                    >
+                      Trigger Update (khi buffer đầy)
+                    </Button>
+                  </div>
+
+                  <div>
+                    <Button
+                      type="default"
+                      danger
+                      icon={<ThunderboltOutlined />}
+                      onClick={() => handleIncrementalUpdate(true)}
+                      loading={updatingBuffer}
+                      block
+                    >
+                      Force Update Now (bất kể buffer)
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={12}>
+          <Card
+            title={(
+              <span>
+                <DatabaseOutlined style={{ marginRight: 8 }} />
+                Cấu hình Buffer
+              </span>
+            )}
+          >
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
+                Buffer Size (10-1000)
+              </div>
+              <InputNumber
+                value={bufferSize}
+                onChange={setBufferSize}
+                min={10}
+                max={1000}
+                style={{ width: '100%' }}
+              />
+              <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+                Số lượng tương tác tích lũy trước khi trigger update tự động
+              </div>
+            </div>
+
+            <Button
+              type="primary"
+              onClick={handleApplyBufferSize}
+              disabled={!onlineLearningStatus?.enabled}
+              block
+            >
+              Áp dụng Buffer Size
+            </Button>
+
+            {onlineLearningStatus?.note && (
+              <Alert
+                message={onlineLearningStatus.note}
+                type="info"
+                showIcon
+                style={{ marginTop: 16 }}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      <Card
+        title="Về Online Learning"
+        style={{ marginTop: 16 }}
+      >
+        <div style={{ fontSize: 14, lineHeight: 1.8 }}>
+          <h4>🚀 Online Learning là gì?</h4>
+          <p>
+            Online Learning cho phép hệ thống cập nhật <strong>SBERT user profiles</strong> một cách
+            incremental (từng phần) mà không cần retrain toàn bộ model. Điều này giúp:
+          </p>
+          <ul>
+            <li>Cập nhật nhanh theo tương tác người dùng mới</li>
+            <li>Tiết kiệm thời gian (không cần retrain toàn bộ)</li>
+            <li>Cải thiện recommendations theo thời gian thực</li>
+          </ul>
+
+          <h4>📊 Cách hoạt động:</h4>
+          <ol>
+            <li>Hệ thống thu thập tương tác người dùng vào <strong>buffer</strong></li>
+            <li>Khi buffer đầy (đạt buffer_size), tự động trigger update</li>
+            <li>Hoặc bạn có thể <strong>Force Update</strong> bất kỳ lúc nào</li>
+            <li>Chỉ SBERT user profiles được cập nhật, {collaborativeModelFullLabel} model giữ nguyên</li>
+          </ol>
+
+          <h4>⚠️ Hạn chế:</h4>
+          <ul>
+            <li>Chỉ cập nhật SBERT, không cập nhật {collaborativeModelFullLabel}</li>
+            <li>Để cập nhật {collaborativeModelLabel}, cần Retrain Toàn Bộ</li>
+            <li>Buffer size nên chọn phù hợp với lượng tương tác (10-1000)</li>
+          </ul>
+        </div>
+      </Card>
+    </>
+  ) : (
+    <Alert
+      message="Online Learning chưa hỗ trợ cho mô hình này"
+      description={(
+        <div>
+          <p>Hiện tại mô hình <strong>{selectedModel?.label || 'đang chọn'}</strong> chưa có workflow incremental.</p>
+          <p>Vui lòng sử dụng <strong>Retrain Toàn Bộ</strong> để cập nhật model.</p>
+        </div>
+      )}
+      type="warning"
+      showIcon
+    />
+  );
+
+  const tabItems = [
+    {
+      key: 'overview',
+      label: 'Tổng quan',
+      children: overviewTabContent,
+    },
+    {
+      key: 'online-learning',
+      label: (
+        <span>
+          <ThunderboltOutlined />
+          Online Learning
+        </span>
+      ),
+      children: onlineLearningTabContent,
+    },
+  ];
+
   return (
     <AdminLayout title="Hệ thống gợi ý">
       <Card size="small" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
           <span style={{ fontWeight: 500 }}>Chọn Model hoạt động:</span>
-          <Button.Group>
+          <Space.Compact>
             {modelOptions.map((model) => (
               <Button
                 key={model.key}
                 type={model.key === selectedModelKey ? 'primary' : 'default'}
                 onClick={() => handleModelSwitch(model.key)}
               >
-                {model.label}
+                {model.label || model.key}
               </Button>
             ))}
-          </Button.Group>
+          </Space.Compact>
 
           {selectedModel && (
             <>
@@ -798,10 +1018,9 @@ const AdminRecommendation = () => {
         )}
       </Card>
 
-      {/* Action Buttons */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>{renderStatusTag()}</div>
-        
+
         <div style={{ display: 'flex', gap: 8 }}>
           <Button
             icon={<ReloadOutlined />}
@@ -809,7 +1028,7 @@ const AdminRecommendation = () => {
           >
             Làm mới
           </Button>
-          
+
           <Button
             type="primary"
             danger
@@ -823,11 +1042,10 @@ const AdminRecommendation = () => {
         </div>
       </div>
 
-      {/* Alert for retraining */}
       {isRetraining && (
         <Alert
           message="Model đang được retrain"
-          description={
+          description={(
             <div>
               <p>Hệ thống đang huấn luyện lại toàn bộ model với dữ liệu mới nhất...</p>
               <Progress percent={undefined} status="active" />
@@ -835,7 +1053,7 @@ const AdminRecommendation = () => {
                 Trang này sẽ tự động cập nhật mỗi 3 giây
               </p>
             </div>
-          }
+          )}
           type="info"
           showIcon
           icon={<SyncOutlined spin />}
@@ -843,7 +1061,6 @@ const AdminRecommendation = () => {
         />
       )}
 
-      {/* Alert for model not loaded */}
       {!modelsLoaded && !isRetraining && (
         <Alert
           message="Model chưa được load"
@@ -854,210 +1071,12 @@ const AdminRecommendation = () => {
         />
       )}
 
-      {/* Tabs */}
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         type="card"
-      >
-        {/* Overview Tab */}
-        <TabPane tab="Tổng quan" key="overview">
-          {renderOverviewStats()}
-          {renderModelDetails()}
-        </TabPane>
-
-        {/* Online Learning Tab */}
-        <TabPane 
-          tab={
-            <span>
-              <ThunderboltOutlined />
-              Online Learning
-            </span>
-          } 
-          key="online-learning"
-        >
-          {selectedModelSupportsOnlineLearning ? (
-            <>
-              <Alert
-                message="Lưu ý về Online Learning"
-                description={
-                  <div>
-                    <p><strong>Online Learning chỉ cập nhật SBERT user profiles</strong>, không cập nhật {collaborativeModelFullLabel}.</p>
-                    <p>Để cập nhật {collaborativeModelLabel} model, bạn cần thực hiện <strong>Retrain Toàn Bộ</strong>.</p>
-                  </div>
-                }
-                type="info"
-                showIcon
-                style={{ marginBottom: 24 }}
-              />
-
-              <Row gutter={[16, 16]}>
-                {/* Online Learning Control */}
-                <Col xs={24} lg={12}>
-                  <Card
-                    title={
-                      <span>
-                        <SettingOutlined style={{ marginRight: 8 }} />
-                        Điều khiển Online Learning
-                      </span>
-                    }
-                  >
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                        <span style={{ fontSize: 14, fontWeight: 500 }}>Trạng thái:</span>
-                        <Switch
-                          checked={onlineLearningStatus?.enabled}
-                          onChange={handleOnlineLearningToggle}
-                          checkedChildren="Bật"
-                          unCheckedChildren="Tắt"
-                        />
-                      </div>
-
-                      {onlineLearningStatus?.enabled && (
-                        <>
-                          <div style={{ marginBottom: 16 }}>
-                            <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
-                              Buffer Progress: {onlineLearningStatus.buffer_size} / {onlineLearningStatus.buffer_capacity}
-                            </div>
-                            <Progress
-                              percent={bufferProgress}
-                              status={onlineLearningStatus.buffer_full ? 'exception' : 'active'}
-                              strokeColor={onlineLearningStatus.buffer_full ? '#ff4d4f' : '#1890ff'}
-                            />
-                            {onlineLearningStatus.buffer_full && (
-                              <div style={{ fontSize: 12, color: '#ff4d4f', marginTop: 4 }}>
-                                ⚠️ Buffer đã đầy! Nên trigger update ngay.
-                              </div>
-                            )}
-                          </div>
-
-                          <div style={{ marginBottom: 16 }}>
-                            <Button
-                              type="primary"
-                              icon={<PlayCircleOutlined />}
-                              onClick={() => handleIncrementalUpdate(false)}
-                              loading={updatingBuffer}
-                              disabled={!onlineLearningStatus.buffer_full}
-                              block
-                            >
-                              Trigger Update (khi buffer đầy)
-                            </Button>
-                          </div>
-
-                          <div>
-                            <Button
-                              type="default"
-                              danger
-                              icon={<ThunderboltOutlined />}
-                              onClick={() => handleIncrementalUpdate(true)}
-                              loading={updatingBuffer}
-                              block
-                            >
-                              Force Update Now (bất kể buffer)
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </Card>
-                </Col>
-
-                {/* Buffer Configuration */}
-                <Col xs={24} lg={12}>
-                  <Card
-                    title={
-                      <span>
-                        <DatabaseOutlined style={{ marginRight: 8 }} />
-                        Cấu hình Buffer
-                      </span>
-                    }
-                  >
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
-                        Buffer Size (10-1000)
-                      </div>
-                      <InputNumber
-                        value={bufferSize}
-                        onChange={setBufferSize}
-                        min={10}
-                        max={1000}
-                        style={{ width: '100%' }}
-                      />
-                      <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
-                        Số lượng tương tác tích lũy trước khi trigger update tự động
-                      </div>
-                    </div>
-
-                    <Button
-                      type="primary"
-                      onClick={handleApplyBufferSize}
-                      disabled={!onlineLearningStatus?.enabled}
-                      block
-                    >
-                      Áp dụng Buffer Size
-                    </Button>
-
-                    {onlineLearningStatus?.note && (
-                      <Alert
-                        message={onlineLearningStatus.note}
-                        type="info"
-                        showIcon
-                        style={{ marginTop: 16 }}
-                      />
-                    )}
-                  </Card>
-                </Col>
-              </Row>
-
-              {/* Online Learning Info */}
-              <Card
-                title="Về Online Learning"
-                style={{ marginTop: 16 }}
-              >
-                <div style={{ fontSize: 14, lineHeight: 1.8 }}>
-                  <h4>🚀 Online Learning là gì?</h4>
-                  <p>
-                    Online Learning cho phép hệ thống cập nhật <strong>SBERT user profiles</strong> một cách 
-                    incremental (từng phần) mà không cần retrain toàn bộ model. Điều này giúp:
-                  </p>
-                  <ul>
-                    <li>Cập nhật nhanh theo tương tác người dùng mới</li>
-                    <li>Tiết kiệm thời gian (không cần retrain toàn bộ)</li>
-                    <li>Cải thiện recommendations theo thời gian thực</li>
-                  </ul>
-
-                  <h4>📊 Cách hoạt động:</h4>
-                  <ol>
-                    <li>Hệ thống thu thập tương tác người dùng vào <strong>buffer</strong></li>
-                    <li>Khi buffer đầy (đạt buffer_size), tự động trigger update</li>
-                    <li>Hoặc bạn có thể <strong>Force Update</strong> bất kỳ lúc nào</li>
-                    <li>Chỉ SBERT user profiles được cập nhật, {collaborativeModelLabel} model giữ nguyên</li>
-                  </ol>
-
-                  <h4>⚠️ Hạn chế:</h4>
-                  <ul>
-                    <li>Chỉ cập nhật SBERT, không cập nhật {collaborativeModelFullLabel}</li>
-                    <li>Để cập nhật {collaborativeModelLabel}, cần Retrain Toàn Bộ</li>
-                    <li>Buffer size nên chọn phù hợp với lượng tương tác (10-1000)</li>
-                  </ul>
-                </div>
-              </Card>
-            </>
-          ) : (
-            <Alert
-              message="Online Learning chưa hỗ trợ cho mô hình này"
-              description={
-                <div>
-                  <p>Hiện tại mô hình <strong>{selectedModel?.label || 'đang chọn'}</strong> chưa có workflow incremental.</p>
-                  <p>Vui lòng sử dụng <strong>Retrain Toàn Bộ</strong> để cập nhật model.</p>
-                </div>
-              }
-              type="warning"
-              showIcon
-            />
-          )}
-        </TabPane>
-      </Tabs>
+        items={tabItems}
+      />
     </AdminLayout>
   );
 };

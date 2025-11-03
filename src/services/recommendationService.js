@@ -1,156 +1,241 @@
 import axios from 'axios';
-import api from '../config/ApiConfig.js';
+import { axiosClient } from '../utils/axiousClient';
 
-const REQUEST_TIMEOUT = 30000;
-
-let rsApi = null;
-let modelRegistry = [];
-let activeModelKey = null;
-
-const createRsApi = (baseUrl) => {
-  const instance = axios.create({
-    baseURL: baseUrl,
-    timeout: REQUEST_TIMEOUT,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  instance.interceptors.request.use(
-    (config) => {
-      console.log(`[RS API] ${config.method?.toUpperCase()} ${config.url}`);
-      return config;
-    },
-    (error) => {
-      console.error('[RS API] Request error:', error);
-      return Promise.reject(error);
-    }
-  );
-
-  instance.interceptors.response.use(
-    (response) => {
-      console.log('[RS API] Response:', response.status, response.data);
-      return response;
-    },
-    (error) => {
-      console.error('[RS API] Response error:', error.response?.data || error.message);
-      return Promise.reject(error);
-    }
-  );
-
-  return instance;
+const DEFAULT_MODEL_INFO = {
+  key: 'implicit',
+  label: 'Implicit ALS + SBERT',
+  baseUrl: 'http://localhost:8001/api/v1',
+  supportsOnlineLearning: true,
+  active: true,
 };
 
-const ensureRsApi = async () => {
-  if (!rsApi) {
-    await refreshModelRegistry();
-  }
-  return rsApi;
-};
+const ACTIVE_MODEL_STORAGE_KEY = 'activeRecommendationModel';
+const MODEL_OPTIONS_STORAGE_KEY = 'availableRecommendationModels';
+const MODEL_REGISTRY_TTL_MS = 30_000;
+const ACTIVE_MODEL_REFRESH_TTL_MS = 15_000;
 
-export const refreshModelRegistry = async () => {
+const safeParse = (raw, fallback = null) => {
+  if (!raw) return fallback;
   try {
-    const response = await api.get('/admin/recommendation/models');
-    const payload = response?.data ?? {};
-    const models = payload?.models ?? [];
-    const activeKey = payload?.activeKey ?? models[0]?.key ?? null;
-
-    if (!activeKey) {
-      throw new Error('No recommendation models configured');
-    }
-
-    const activeModel = models.find((model) => model.key === activeKey);
-    if (!activeModel?.baseUrl) {
-      throw new Error('Active recommendation model is missing base URL');
-    }
-
-    modelRegistry = models;
-    activeModelKey = activeKey;
-    rsApi = createRsApi(activeModel.baseUrl);
-    console.info(
-      `[RS API] Active model synced: ${activeModel.label || activeModel.key} (${activeModel.baseUrl})`
-    );
-
-    return { models, activeKey };
+    return JSON.parse(raw);
   } catch (error) {
-    console.error('Failed to refresh recommendation model registry:', error);
-    rsApi = null;
-    modelRegistry = [];
-    activeModelKey = null;
-    throw error;
+    console.warn('[RS API] Failed to parse cached data:', error);
+    return fallback;
   }
 };
 
+const loadActiveModelFromStorage = () => {
+  if (typeof window === 'undefined') {
+    return { ...DEFAULT_MODEL_INFO };
+  }
+  const cached = safeParse(window.localStorage.getItem(ACTIVE_MODEL_STORAGE_KEY));
+  if (cached?.baseUrl) {
+    return cached;
+  }
+  return { ...DEFAULT_MODEL_INFO };
+};
+
+const loadModelsFromStorage = () => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+  const cached = safeParse(window.localStorage.getItem(MODEL_OPTIONS_STORAGE_KEY), []);
+  if (Array.isArray(cached)) {
+    return cached;
+  }
+  return [];
+};
+
+const persistActiveModel = (info) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(ACTIVE_MODEL_STORAGE_KEY, JSON.stringify(info));
+  } catch (error) {
+    console.warn('[RS API] Failed to persist active model:', error);
+  }
+};
+
+const persistModelOptions = (models) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(MODEL_OPTIONS_STORAGE_KEY, JSON.stringify(models));
+  } catch (error) {
+    console.warn('[RS API] Failed to persist model options:', error);
+  }
+};
+
+let activeModelInfo = loadActiveModelFromStorage();
+let modelOptionsCache = loadModelsFromStorage();
+let lastRegistryFetch = 0;
+let lastActiveFetch = 0;
+
+const rsApi = axios.create({
+  baseURL: activeModelInfo.baseUrl,
+  timeout: 30000, // 30s timeout for retrain endpoint
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+const setActiveModelCache = (info) => {
+  if (!info?.baseUrl) {
+    return;
+  }
+  activeModelInfo = {
+    ...info,
+    key: info.key || info.modelKey || DEFAULT_MODEL_INFO.key,
+  };
+  rsApi.defaults.baseURL = activeModelInfo.baseUrl;
+  persistActiveModel(activeModelInfo);
+  lastActiveFetch = Date.now();
+};
+
+// Initialize axios base URL from cached data
+setActiveModelCache(activeModelInfo);
+
+const setModelOptionsCache = (models) => {
+  if (!Array.isArray(models)) {
+    return;
+  }
+  modelOptionsCache = models;
+  persistModelOptions(models);
+};
+
+// Add request interceptor for logging
+rsApi.interceptors.request.use(
+  (config) => {
+    console.log(`[RS API] ${config.method?.toUpperCase()} ${config.baseURL || ''}${config.url}`);
+    return config;
+  },
+  (error) => {
+    console.error('[RS API] Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for error handling
+rsApi.interceptors.response.use(
+  (response) => {
+    console.log('[RS API] Response:', response.status, response.data);
+    return response;
+  },
+  (error) => {
+    console.error('[RS API] Response error:', error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);
+
+const getApiData = (response) => response?.data?.data ?? response?.data ?? null;
+
+const fetchActiveModelInfo = async () => {
+  try {
+    const response = await axiosClient.get('/recommendation/active-model');
+    const payload = getApiData(response);
+    if (payload?.baseUrl) {
+      setActiveModelCache(payload);
+    }
+    lastActiveFetch = Date.now();
+    return payload;
+  } catch (error) {
+    console.warn('[RS API] Failed to fetch active recommendation model:', error.message);
+    return null;
+  }
+};
+
+const ensureActiveModel = async ({ forceRefresh = false } = {}) => {
+  const needsRefresh = Date.now() - lastActiveFetch > ACTIVE_MODEL_REFRESH_TTL_MS;
+  if (!forceRefresh && activeModelInfo?.baseUrl && !needsRefresh) {
+    return activeModelInfo;
+  }
+
+  const info = await fetchActiveModelInfo();
+  if (info?.baseUrl) {
+    return info;
+  }
+
+  // Fallback to default if no info available
+  setActiveModelCache(activeModelInfo?.baseUrl ? activeModelInfo : DEFAULT_MODEL_INFO);
+  return activeModelInfo;
+};
+
+const callRecsys = async (method, url, options = {}) => {
+  const { forceRefresh = false, ...axiosConfig } = options;
+  await ensureActiveModel({ forceRefresh });
+  return rsApi.request({ method, url, ...axiosConfig });
+};
+
+/**
+ * Refresh model registry (admin only)
+ * @param {boolean} force - Force refresh even if cache is warm
+ * @returns {Promise<{models: Array, activeKey: string}>}
+ */
+export const refreshModelRegistry = async (force = false) => {
+  if (!force && modelOptionsCache.length && Date.now() - lastRegistryFetch < MODEL_REGISTRY_TTL_MS) {
+    return {
+      models: modelOptionsCache,
+      activeKey: activeModelInfo?.key,
+    };
+  }
+
+  const response = await axiosClient.get('/admin/recommendation/models');
+  const payload = getApiData(response);
+  const models = payload?.models ?? [];
+  const activeKey = payload?.activeKey
+    ?? models.find((model) => model.active)?.key
+    ?? activeModelInfo?.key
+    ?? DEFAULT_MODEL_INFO.key;
+
+  setModelOptionsCache(models);
+  lastRegistryFetch = Date.now();
+
+  const active = models.find((model) => model.key === activeKey);
+  if (active?.baseUrl) {
+    setActiveModelCache(active);
+  }
+
+  return {
+    models,
+    activeKey,
+  };
+};
+
+/**
+ * Get model options list (admin only)
+ */
 export const getAvailableRecommendationModels = async (force = false) => {
-  if (force || modelRegistry.length === 0) {
-    await refreshModelRegistry();
+  if (!force && modelOptionsCache.length) {
+    return modelOptionsCache;
   }
-  return modelRegistry;
+  const { models } = await refreshModelRegistry(true);
+  return models;
 };
 
-export const getActiveRecommendationModelKey = async () => {
-  if (!activeModelKey) {
-    await refreshModelRegistry();
-  }
-  return activeModelKey;
-};
-
+/**
+ * Set active recommendation model (admin only)
+ */
 export const setActiveRecommendationModel = async (modelKey) => {
-  try {
-    const response = await api.put(`/admin/recommendation/models/${modelKey}`);
-    const modelInfo = response?.data;
+  const response = await axiosClient.put(`/admin/recommendation/models/${modelKey}`);
+  const payload = getApiData(response);
 
-    if (!modelInfo?.baseUrl) {
-      throw new Error('Active recommendation model response missing base URL');
-    }
-
-    activeModelKey = modelInfo.key ?? modelKey;
-    rsApi = createRsApi(modelInfo.baseUrl);
-
-    modelRegistry = modelRegistry.map((model) => ({
-      ...model,
-      active: model.key === activeModelKey,
-      baseUrl: model.key === activeModelKey ? modelInfo.baseUrl : model.baseUrl,
-      label: model.key === activeModelKey && modelInfo.label ? modelInfo.label : model.label,
-      supportsOnlineLearning:
-        model.key === activeModelKey && typeof modelInfo.supportsOnlineLearning === 'boolean'
-          ? modelInfo.supportsOnlineLearning
-          : model.supportsOnlineLearning,
-    }));
-
-    // If registry did not previously contain the activated model, append it.
-    if (!modelRegistry.some((model) => model.key === activeModelKey)) {
-      modelRegistry = [
-        ...modelRegistry,
-        {
-          key: activeModelKey,
-          label: modelInfo.label ?? activeModelKey,
-          baseUrl: modelInfo.baseUrl,
-          supportsOnlineLearning: !!modelInfo.supportsOnlineLearning,
-          active: true,
-        },
-      ];
-    }
-
-    console.info(
-      `[RS API] Active model switched to ${modelInfo.label || modelInfo.key} (${modelInfo.baseUrl})`
+  if (payload?.baseUrl) {
+    setActiveModelCache(payload);
+    setModelOptionsCache(
+      modelOptionsCache.map((model) => ({
+        ...model,
+        active: model.key === payload.key,
+      }))
     );
-
-    return modelInfo;
-  } catch (error) {
-    console.error('Failed to set active recommendation model:', error);
-    throw error;
   }
+
+  return payload;
 };
 
 /**
  * Get health status of recommendation system
- * @returns {Promise<{status: string, models_loaded: boolean}>}
  */
-export const getHealthStatus = async () => {
+export const getHealthStatus = async (options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.get('/health');
+    const response = await callRecsys('get', '/health', options);
     return response.data;
   } catch (error) {
     console.error('Failed to get health status:', error);
@@ -160,12 +245,10 @@ export const getHealthStatus = async () => {
 
 /**
  * Get model information
- * @returns {Promise<Object>} Model info including CF and Content-Based models
  */
-export const getModelInfo = async () => {
+export const getModelInfo = async (options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.get('/model/info');
+    const response = await callRecsys('get', '/model/info', options);
     return response.data;
   } catch (error) {
     console.error('Failed to get model info:', error);
@@ -175,12 +258,10 @@ export const getModelInfo = async () => {
 
 /**
  * Trigger model retraining (Admin only)
- * @returns {Promise<{status: string, message: string}>}
  */
-export const triggerRetrain = async () => {
+export const triggerRetrain = async (options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.post('/retrain');
+    const response = await callRecsys('post', '/retrain', options);
     return response.data;
   } catch (error) {
     console.error('Failed to trigger retrain:', error);
@@ -190,15 +271,12 @@ export const triggerRetrain = async () => {
 
 /**
  * Get personalized recommendations for a user
- * @param {number} userId - User ID
- * @param {number} limit - Number of recommendations (default: 10, max: 100)
- * @returns {Promise<{user_id: number, limit: number, items: Array}>}
  */
-export const getRecommendations = async (userId, limit = 10) => {
+export const getRecommendations = async (userId, limit = 10, options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.get('/recommendations', {
+    const response = await callRecsys('get', '/recommendations', {
       params: { user_id: userId, limit },
+      ...options,
     });
     return response.data;
   } catch (error) {
@@ -209,15 +287,12 @@ export const getRecommendations = async (userId, limit = 10) => {
 
 /**
  * Get similar books
- * @param {number} bookId - Book ID
- * @param {number} limit - Number of similar books (default: 10, max: 100)
- * @returns {Promise<{book_id: number, items: Array}>}
  */
-export const getSimilarBooks = async (bookId, limit = 10) => {
+export const getSimilarBooks = async (bookId, limit = 10, options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.get('/similar', {
+    const response = await callRecsys('get', '/similar', {
       params: { book_id: bookId, limit },
+      ...options,
     });
     return response.data;
   } catch (error) {
@@ -228,20 +303,17 @@ export const getSimilarBooks = async (bookId, limit = 10) => {
 
 /**
  * Record user feedback (for online learning)
- * @param {number} userId - User ID
- * @param {number} bookId - Book ID
- * @param {string} event - Event type: 'view', 'favorite', 'rate'
- * @param {number} value - Optional value (e.g., rating value)
- * @returns {Promise<{status: string}>}
  */
-export const recordFeedback = async (userId, bookId, event, value = null) => {
+export const recordFeedback = async (userId, bookId, event, value = null, options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.post('/feedback', {
-      user_id: userId,
-      book_id: bookId,
-      event,
-      rating_value: value,
+    const response = await callRecsys('post', '/feedback', {
+      data: {
+        user_id: userId,
+        book_id: bookId,
+        event,
+        rating_value: value,
+      },
+      ...options,
     });
     return response.data;
   } catch (error) {
@@ -252,12 +324,10 @@ export const recordFeedback = async (userId, bookId, event, value = null) => {
 
 /**
  * Get online learning status
- * @returns {Promise<Object>}
  */
-export const getOnlineLearningStatus = async () => {
+export const getOnlineLearningStatus = async (options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.get('/online-learning/status');
+    const response = await callRecsys('get', '/online-learning/status', options);
     return response.data;
   } catch (error) {
     console.error('Failed to get online learning status:', error);
@@ -267,14 +337,12 @@ export const getOnlineLearningStatus = async () => {
 
 /**
  * Enable online learning
- * @param {number} bufferSize - Buffer size (10-1000)
- * @returns {Promise<Object>}
  */
-export const enableOnlineLearning = async (bufferSize = 100) => {
+export const enableOnlineLearning = async (bufferSize = 100, options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.post('/online-learning/enable', null, {
+    const response = await callRecsys('post', '/online-learning/enable', {
       params: { buffer_size: bufferSize },
+      ...options,
     });
     return response.data;
   } catch (error) {
@@ -285,12 +353,10 @@ export const enableOnlineLearning = async (bufferSize = 100) => {
 
 /**
  * Disable online learning
- * @returns {Promise<Object>}
  */
-export const disableOnlineLearning = async () => {
+export const disableOnlineLearning = async (options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.post('/online-learning/disable');
+    const response = await callRecsys('post', '/online-learning/disable', options);
     return response.data;
   } catch (error) {
     console.error('Failed to disable online learning:', error);
@@ -300,14 +366,12 @@ export const disableOnlineLearning = async () => {
 
 /**
  * Trigger incremental update
- * @param {boolean} force - Force update even if buffer is not full
- * @returns {Promise<Object>}
  */
-export const triggerIncrementalUpdate = async (force = false) => {
+export const triggerIncrementalUpdate = async (force = false, options = {}) => {
   try {
-    const client = await ensureRsApi();
-    const response = await client.post('/online-learning/update', null, {
+    const response = await callRecsys('post', '/online-learning/update', {
       params: { force },
+      ...options,
     });
     return response.data;
   } catch (error) {
@@ -319,7 +383,6 @@ export const triggerIncrementalUpdate = async (force = false) => {
 export default {
   refreshModelRegistry,
   getAvailableRecommendationModels,
-  getActiveRecommendationModelKey,
   setActiveRecommendationModel,
   getHealthStatus,
   getModelInfo,
