@@ -17,6 +17,7 @@ import { useParams } from "react-router-dom";
 import { getBookDetail } from '../services/manageBookService';
 import { API_BASE_URL } from '../config/ApiConfig';
 import { getToken } from '../utils/storage';
+import { sendFeedback } from '../utils/feedbackHelper';
 
 // // Import all the new components
 const BookCover = React.lazy(() => import('../components/book-detail/BookCover'));
@@ -211,6 +212,9 @@ const BookDetail = () => {
       // Submit rating
       await createOrUpdateRating(user.id, book.id, { value: rating, comment });
       
+      // Send feedback to Recommendation System for online learning
+      sendFeedback(user.id, book.id, 'rating', rating);
+      
       // Fetch lại TẤT CẢ reviews với userId='0'
       const allReviews = await getBookRatings('0', book.id);
       
@@ -399,11 +403,15 @@ const BookDetail = () => {
         await removeFavorite(user.id, bookId);
         setIsFavorited(false);
         message.success('Đã xóa khỏi yêu thích');
+        sendFeedback(user.id, bookId, 'favorite', 0); //Gửi phản hồi xóa yêu thích với giá trị 0 cập nhât model
       } else {
         // Add to favorites
         await addFavorite(user.id, bookId);
         setIsFavorited(true);
         message.success('Đã thêm vào yêu thích');
+        
+        // Send feedback to Recommendation System (only for add, not remove)
+        sendFeedback(user.id, bookId, 'favorite');
       }
     } catch (error) {
       console.error('Favorite action failed:', error);

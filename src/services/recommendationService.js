@@ -117,7 +117,7 @@ export const getSimilarBooks = async (bookId, limit = 10) => {
  * Record user feedback (for online learning)
  * @param {number} userId - User ID
  * @param {number} bookId - Book ID
- * @param {string} event - Event type: 'view', 'favorite', 'rating', 'read'
+ * @param {string} event - Event type: 'view', 'favorite', 'rate'
  * @param {number} value - Optional value (e.g., rating value)
  * @returns {Promise<{status: string}>}
  */
@@ -127,11 +127,73 @@ export const recordFeedback = async (userId, bookId, event, value = null) => {
       user_id: userId,
       book_id: bookId,
       event,
-      value,
+      rating_value: value,
     });
     return response.data;
   } catch (error) {
     console.error('Failed to record feedback:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get online learning status
+ * @returns {Promise<Object>}
+ */
+export const getOnlineLearningStatus = async () => {
+  try {
+    const response = await rsApi.get('/online-learning/status');
+    return response.data;
+  } catch (error) {
+    console.error('Failed to get online learning status:', error);
+    throw error;
+  }
+};
+
+/**
+ * Enable online learning
+ * @param {number} bufferSize - Buffer size (10-1000)
+ * @returns {Promise<Object>}
+ */
+export const enableOnlineLearning = async (bufferSize = 100) => {
+  try {
+    const response = await rsApi.post('/online-learning/enable', null, {
+      params: { buffer_size: bufferSize }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to enable online learning:', error);
+    throw error;
+  }
+};
+
+/**
+ * Disable online learning
+ * @returns {Promise<Object>}
+ */
+export const disableOnlineLearning = async () => {
+  try {
+    const response = await rsApi.post('/online-learning/disable');
+    return response.data;
+  } catch (error) {
+    console.error('Failed to disable online learning:', error);
+    throw error;
+  }
+};
+
+/**
+ * Trigger incremental update
+ * @param {boolean} force - Force update even if buffer is not full
+ * @returns {Promise<Object>}
+ */
+export const triggerIncrementalUpdate = async (force = false) => {
+  try {
+    const response = await rsApi.post('/online-learning/update', null, {
+      params: { force }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to trigger incremental update:', error);
     throw error;
   }
 };
@@ -143,4 +205,8 @@ export default {
   getRecommendations,
   getSimilarBooks,
   recordFeedback,
+  getOnlineLearningStatus,
+  enableOnlineLearning,
+  disableOnlineLearning,
+  triggerIncrementalUpdate,
 };

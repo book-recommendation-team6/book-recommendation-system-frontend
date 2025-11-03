@@ -7,6 +7,7 @@ import { Modal } from "antd"
 import useAuth from "../../hook/useAuth"
 import { getBookFavorites, removeFavorite } from "../../services/bookFavorite"
 import { useMessage } from "../../contexts/MessageProvider"
+import { sendFeedback } from "../../utils/feedbackHelper"
 
 const FavoritesSection = React.memo(() => {
   // Update later to fetch real data
@@ -39,6 +40,7 @@ const FavoritesSection = React.memo(() => {
         const favBookId = fav.bookId || fav.book?.id || fav.id;
         return favBookId !== bookId;
       }));
+      sendFeedback(user.id, bookId, 'favorite', 0); //Gửi phản hồi xóa yêu thích với giá trị 0 cập nhât model
     } catch (error) {
       message.error("Xóa thất bại. Vui lòng thử lại");
       console.error("Remove favorite failed:", error);

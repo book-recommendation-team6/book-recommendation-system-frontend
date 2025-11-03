@@ -11,6 +11,7 @@ import useAuth from "../../hook/useAuth";
 
 import { useLocation } from "react-router-dom";
 import { recordReadingHistory } from "../../services/historyService";
+import { sendFeedback } from "../../utils/feedbackHelper";
 import {
   fetchBookmarks as fetchBookmarksApi,
   createBookmark as createBookmarkApi,
@@ -316,6 +317,11 @@ export default function EpubCoreViewer({ onBack }) {
         await epubBook.locations.generate(1024);
         const { title, creator } = epubBook.package?.metadata || {};
         setMeta({ title: title || book?.title || "", author: creator || "" });
+
+        // Send 'history' feedback to Recommendation System when user starts reading
+        if (user?.id && bookId != null) {
+          sendFeedback(user.id, bookId, 'history');
+        }
 
         const nav = await epubBook.loaded.navigation;
         setToc(nav?.toc || []);
