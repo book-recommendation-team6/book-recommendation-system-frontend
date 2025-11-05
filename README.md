@@ -51,7 +51,7 @@ npm --version
 
 ### 1. Clone repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/book-recommendation-team6/book-recommendation-system-frontend.git
 cd book-recommendation-system-frontend
 ```
 
@@ -180,10 +180,6 @@ User Action → Frontend feedback → RS API → Buffer
                                           ↓
                     Buffer đầy → Auto update SBERT profiles
 ```
-
-> Chi tiết xem: [ONLINE-LEARNING-INTEGRATION.md](./ONLINE-LEARNING-INTEGRATION.md)
-
----
 
 ## 🔧 Cấu hình
 
