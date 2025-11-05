@@ -92,51 +92,6 @@ Build output sẽ nằm trong thư mục `dist/`
 ```bash
 npm run preview
 ```
-
----
-
-## 📂 Cấu trúc dự án
-
-```
-src/
-├── pages/              # Các trang chính
-│   ├── Home.jsx       # Trang chủ với sách gợi ý
-│   ├── BookDetail.jsx # Chi tiết sách + reviews
-│   ├── BookReader/    # Đọc sách EPUB/PDF
-│   ├── ManageAccount/ # Quản lý tài khoản
-│   └── Admin/         # Trang quản trị
-│       └── AdminRecommendation.jsx # Quản lý RS
-│
-├── components/         # Components tái sử dụng
-│   ├── Header.jsx
-│   ├── BookCard.jsx
-│   ├── BookCarousel.jsx
-│   ├── book-detail/   # Components cho BookDetail
-│   ├── admin/         # Components cho Admin
-│   └── reader/        # Components cho Reader
-│
-├── services/          # API Services
-│   ├── authService.js
-│   ├── bookService.js
-│   ├── recommendationService.js  # RS API
-│   ├── ratingService.js
-│   └── bookFavorite.js
-│
-├── contexts/          # State Management
-│   ├── AuthProvider.jsx
-│   └── MessageProvider.jsx
-│
-├── utils/             # Utilities
-│   ├── feedbackHelper.js  # Helper gửi feedback to RS
-│   └── storage.js         # LocalStorage management
-│
-├── config/
-│   └── ApiConfig.js   # API configuration
-│
-└── constant/
-    └── routePath.jsx  # Route constants
-```
-
 ---
 
 ## 🎨 Tính năng chính
