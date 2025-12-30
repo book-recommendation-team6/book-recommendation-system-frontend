@@ -2,10 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Hero from "../components/Hero";
 import BookCarousel from "../components/BookCarousel";
+import TopBooksShowcase from "../components/TopBooksShowcase";
 import SectionHeader from "../components/SectionHeader";
+import FeaturesSection from "../components/FeaturesSection";
+import StatsSection from "../components/StatsSection";
 import MainLayout from "../layout/MainLayout";
 import { getBooks, getBooksByGenre } from "../services/manageBookService";
-import { getRecommendedBooks, getDiversityBooks } from "../services/bookService";
+import { getRecommendedBooks, getDiversityBooks, getMostReadBooks } from "../services/bookService";
 import useAuth from "../hook/useAuth";
 
 const DEFAULT_PAGE_SIZE = 12;
@@ -16,6 +19,8 @@ const Home = () => {
   const [genre1Books, setGenre1Books] = useState([]);
   const [genre2Books, setGenre2Books] = useState([]);
   const [genre3Books, setGenre3Books] = useState([]);
+  const [topBooks, setTopBooks] = useState([]);
+  const [topBooksLoading, setTopBooksLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDiversity, setShowDiversity] = useState(false);
@@ -75,6 +80,25 @@ const Home = () => {
     loadAllBooks();
   }, [userId]);
   console.log("All books:", allBooks);
+
+  // Load top books (most read) - separate from recommendations
+  useEffect(() => {
+    const loadTopBooks = async () => {
+      setTopBooksLoading(true);
+      try {
+        const response = await getMostReadBooks(0, 4);
+        const books = response?.data?.content || response?.content || [];
+        console.log("Top most read books:", books);
+        setTopBooks(Array.isArray(books) ? books : []);
+      } catch (error) {
+        console.error("Error loading top books:", error);
+        setTopBooks([]);
+      } finally {
+        setTopBooksLoading(false);
+      }
+    };
+    loadTopBooks();
+  }, []);
 
   // Update anchor book when recommendations change
   useEffect(() => {
@@ -136,7 +160,8 @@ const Home = () => {
     return () => {
       isActive = false;
     };
-  }, [showDiversity, anchorBookId, getDiversityBooks]);
+  }, [showDiversity, anchorBookId]);
+
   // Load books by genre
   const loadGenreBooks = useCallback(async (genreId, setter) => {
     try {
@@ -216,7 +241,26 @@ const Home = () => {
         )}
 
         {!loading && !error && (
-          <>
+          <div>
+            {/* Features Section */}
+            {/* <FeaturesSection /> */}
+            
+            {/* Top Books Showcase - Most Read Books */}
+            {topBooksLoading ? (
+              <div className="py-8 text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">Đang tải top sách...</p>
+              </div>
+            ) : topBooks.length > 0 ? (
+              <TopBooksShowcase 
+                books={topBooks} 
+                title="Top sách được đọc nhiều nhất" 
+              />
+            ) : null}
+
+            {/* Stats Section */}
+            {/* <StatsSection /> */}
+
             {/* Recommended Books with Diversity toggle */}
             {allBooks.length > 0 && (
               <section className="mb-12">
@@ -340,7 +384,7 @@ const Home = () => {
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </main>
     </MainLayout>

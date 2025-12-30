@@ -4,7 +4,7 @@ import { axiosClient } from '../utils/axiousClient';
 const DEFAULT_MODEL_INFO = {
   key: 'implicit',
   label: 'Implicit ALS + SBERT',
-  baseUrl: 'http://localhost:8001/api/v1',
+  baseUrl: 'http://localhost:8003/api/v1',
   supportsOnlineLearning: true,
   active: true,
 };
@@ -231,12 +231,12 @@ export const setActiveRecommendationModel = async (modelKey) => {
 };
 
 /**
- * Get health status of recommendation system
+ * Get health status of recommendation system (via Java backend proxy)
  */
-export const getHealthStatus = async (options = {}) => {
+export const getHealthStatus = async () => {
   try {
-    const response = await callRecsys('get', '/health', options);
-    return response.data;
+    const response = await axiosClient.get('/admin/recommendation/health');
+    return getApiData(response);
   } catch (error) {
     console.error('Failed to get health status:', error);
     throw error;
@@ -244,12 +244,12 @@ export const getHealthStatus = async (options = {}) => {
 };
 
 /**
- * Get model information
+ * Get model information (via Java backend proxy)
  */
-export const getModelInfo = async (options = {}) => {
+export const getModelInfo = async () => {
   try {
-    const response = await callRecsys('get', '/model/info', options);
-    return response.data;
+    const response = await axiosClient.get('/admin/recommendation/model-info');
+    return getApiData(response);
   } catch (error) {
     console.error('Failed to get model info:', error);
     throw error;
@@ -257,12 +257,13 @@ export const getModelInfo = async (options = {}) => {
 };
 
 /**
- * Trigger model retraining (Admin only)
+ * Trigger model retraining (Admin only) - via Java backend proxy
+ * This ensures cache invalidation is handled properly
  */
-export const triggerRetrain = async (options = {}) => {
+export const triggerRetrain = async () => {
   try {
-    const response = await callRecsys('post', '/retrain', options);
-    return response.data;
+    const response = await axiosClient.post('/admin/recommendation/retrain');
+    return getApiData(response);
   } catch (error) {
     console.error('Failed to trigger retrain:', error);
     throw error;
@@ -323,12 +324,12 @@ export const recordFeedback = async (userId, bookId, event, value = null, option
 };
 
 /**
- * Get online learning status
+ * Get online learning status (via Java backend proxy)
  */
-export const getOnlineLearningStatus = async (options = {}) => {
+export const getOnlineLearningStatus = async () => {
   try {
-    const response = await callRecsys('get', '/online-learning/status', options);
-    return response.data;
+    const response = await axiosClient.get('/admin/recommendation/online-learning/status');
+    return getApiData(response);
   } catch (error) {
     console.error('Failed to get online learning status:', error);
     throw error;
@@ -336,15 +337,14 @@ export const getOnlineLearningStatus = async (options = {}) => {
 };
 
 /**
- * Enable online learning
+ * Enable online learning (via Java backend proxy)
  */
-export const enableOnlineLearning = async (bufferSize = 100, options = {}) => {
+export const enableOnlineLearning = async (bufferSize = 100) => {
   try {
-    const response = await callRecsys('post', '/online-learning/enable', {
-      params: { buffer_size: bufferSize },
-      ...options,
+    const response = await axiosClient.post('/admin/recommendation/online-learning/enable', null, {
+      params: { bufferSize },
     });
-    return response.data;
+    return getApiData(response);
   } catch (error) {
     console.error('Failed to enable online learning:', error);
     throw error;
@@ -352,12 +352,12 @@ export const enableOnlineLearning = async (bufferSize = 100, options = {}) => {
 };
 
 /**
- * Disable online learning
+ * Disable online learning (via Java backend proxy)
  */
-export const disableOnlineLearning = async (options = {}) => {
+export const disableOnlineLearning = async () => {
   try {
-    const response = await callRecsys('post', '/online-learning/disable', options);
-    return response.data;
+    const response = await axiosClient.post('/admin/recommendation/online-learning/disable');
+    return getApiData(response);
   } catch (error) {
     console.error('Failed to disable online learning:', error);
     throw error;
@@ -365,17 +365,128 @@ export const disableOnlineLearning = async (options = {}) => {
 };
 
 /**
- * Trigger incremental update
+ * Trigger incremental update (via Java backend proxy)
  */
-export const triggerIncrementalUpdate = async (force = false, options = {}) => {
+export const triggerIncrementalUpdate = async (force = false) => {
   try {
-    const response = await callRecsys('post', '/online-learning/update', {
+    const response = await axiosClient.post('/admin/recommendation/online-learning/update', null, {
       params: { force },
-      ...options,
     });
-    return response.data;
+    return getApiData(response);
   } catch (error) {
     console.error('Failed to trigger incremental update:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get cache statistics (Admin only)
+ */
+export const getCacheStats = async () => {
+  try {
+    const response = await axiosClient.get('/admin/recommendation/cache/stats');
+    return getApiData(response);
+  } catch (error) {
+    console.error('Failed to get cache stats:', error);
+    throw error;
+  }
+};
+
+/**
+ * Clear all recommendation caches (Admin only)
+ */
+export const clearRecommendationCache = async () => {
+  try {
+    const response = await axiosClient.delete('/admin/recommendation/cache');
+    return getApiData(response);
+  } catch (error) {
+    console.error('Failed to clear recommendation cache:', error);
+    throw error;
+  }
+};
+
+// ========== Redis Inspector APIs ==========
+
+/**
+ * Get Redis cache summary (Admin only)
+ */
+export const getRedisCacheSummary = async () => {
+  try {
+    const response = await axiosClient.get('/admin/redis/summary');
+    return getApiData(response);
+  } catch (error) {
+    console.error('Failed to get Redis cache summary:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all Redis cache entries with details (Admin only)
+ */
+export const getAllRedisCaches = async () => {
+  try {
+    const response = await axiosClient.get('/admin/redis/caches');
+    return getApiData(response);
+  } catch (error) {
+    console.error('Failed to get Redis caches:', error);
+    throw error;
+  }
+};
+
+/**
+ * Search Redis keys by pattern (Admin only)
+ */
+export const searchRedisKeys = async (pattern = '*') => {
+  try {
+    const response = await axiosClient.get('/admin/redis/keys', {
+      params: { pattern },
+    });
+    return getApiData(response);
+  } catch (error) {
+    console.error('Failed to search Redis keys:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get detailed info for a specific Redis key (Admin only)
+ */
+export const getRedisKeyInfo = async (key) => {
+  try {
+    const response = await axiosClient.get('/admin/redis/key', {
+      params: { key },
+    });
+    return getApiData(response);
+  } catch (error) {
+    console.error('Failed to get Redis key info:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get the actual value stored in a Redis key (Admin only)
+ */
+export const getRedisKeyValue = async (key) => {
+  try {
+    const response = await axiosClient.get('/admin/redis/value', {
+      params: { key },
+    });
+    return getApiData(response);
+  } catch (error) {
+    console.error('Failed to get Redis key value:', error);
+    throw error;
+  }
+};
+
+/**
+ * Trigger logging all cache keys to backend console (Admin only)
+ */
+export const logAllRedisCaches = async () => {
+  try {
+    const response = await axiosClient.post('/admin/redis/log-all');
+    return getApiData(response);
+  } catch (error) {
+    console.error('Failed to log Redis caches:', error);
     throw error;
   }
 };
@@ -394,4 +505,12 @@ export default {
   enableOnlineLearning,
   disableOnlineLearning,
   triggerIncrementalUpdate,
+  getCacheStats,
+  clearRecommendationCache,
+  getRedisCacheSummary,
+  getAllRedisCaches,
+  searchRedisKeys,
+  getRedisKeyInfo,
+  getRedisKeyValue,
+  logAllRedisCaches,
 };

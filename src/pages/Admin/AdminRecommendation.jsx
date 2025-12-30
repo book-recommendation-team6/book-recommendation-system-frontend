@@ -16,6 +16,11 @@ import {
   Descriptions,
   Space,
   Tabs,
+  Table,
+  Input,
+  Tooltip,
+  Typography,
+  Collapse,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -29,6 +34,11 @@ import {
   ThunderboltOutlined,
   SettingOutlined,
   PlayCircleOutlined,
+  SearchOutlined,
+  EyeOutlined,
+  KeyOutlined,
+  ClockCircleOutlined,
+  ExpandOutlined,
 } from '@ant-design/icons';
 import {
   refreshModelRegistry,
@@ -41,8 +51,15 @@ import {
   triggerIncrementalUpdate,
   getAvailableRecommendationModels,
   setActiveRecommendationModel,
+  getCacheStats,
+  clearRecommendationCache,
+  getAllRedisCaches,
+  getRedisKeyValue,
 } from '../../services/recommendationService';
 import AdminLayout from '../../layout/AdminLayout';
+
+const { Text, Paragraph } = Typography;
+const { Panel } = Collapse;
 
 const formatMetricValue = (value, digits = 4) => {
   if (value === null || value === undefined) {
@@ -75,10 +92,20 @@ const AdminRecommendation = () => {
   const [modelInfo, setModelInfo] = useState(null);
   const [healthStatus, setHealthStatus] = useState(null);
   const [onlineLearningStatus, setOnlineLearningStatus] = useState(null);
+  const [cacheStats, setCacheStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [retraining, setRetraining] = useState(false);
   const [bufferSize, setBufferSize] = useState(100);
   const [updatingBuffer, setUpdatingBuffer] = useState(false);
+  const [clearingCache, setClearingCache] = useState(false);
+  
+  // Redis Inspector states
+  const [redisCaches, setRedisCaches] = useState(null);
+  const [loadingRedisCaches, setLoadingRedisCaches] = useState(false);
+  const [selectedKeyValue, setSelectedKeyValue] = useState(null);
+  const [loadingKeyValue, setLoadingKeyValue] = useState(false);
+  const [keyValueModalVisible, setKeyValueModalVisible] = useState(false);
+  const [selectedKeyName, setSelectedKeyName] = useState('');
 
   const effectiveModelKey = selectedModelKey ?? activeModelKey ?? 'implicit';
   const isImplicitModel = effectiveModelKey === 'implicit';
@@ -87,6 +114,37 @@ const AdminRecommendation = () => {
     ? 'Implicit ALS model'
     : 'Neural Collaborative Filtering (NCF) model';
   const onlineLearningEnabled = onlineLearningStatus?.enabled === true;
+
+  // Load Redis cache details
+  const loadRedisCaches = useCallback(async () => {
+    setLoadingRedisCaches(true);
+    try {
+      const data = await getAllRedisCaches();
+      setRedisCaches(data);
+    } catch (error) {
+      console.error('Failed to load Redis caches:', error);
+      message.error('Không thể tải chi tiết Redis cache');
+    } finally {
+      setLoadingRedisCaches(false);
+    }
+  }, []);
+
+  // View value of a specific key
+  const handleViewKeyValue = async (key) => {
+    setSelectedKeyName(key);
+    setLoadingKeyValue(true);
+    setKeyValueModalVisible(true);
+    try {
+      const value = await getRedisKeyValue(key);
+      setSelectedKeyValue(value);
+    } catch (error) {
+      console.error('Failed to get key value:', error);
+      message.error('Không thể lấy giá trị của key');
+      setSelectedKeyValue(null);
+    } finally {
+      setLoadingKeyValue(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -127,12 +185,14 @@ const AdminRecommendation = () => {
 
     setLoading(true);
     try {
-      const [info, health] = await Promise.all([
+      const [info, health, cache] = await Promise.all([
         getModelInfo(),
         getHealthStatus(),
+        getCacheStats().catch(() => null),
       ]);
       setModelInfo(info);
       setHealthStatus(health);
+      setCacheStats(cache);
 
       if (activeModelSupportsOnlineLearning) {
         try {
@@ -154,6 +214,7 @@ const AdminRecommendation = () => {
       setModelInfo(null);
       setHealthStatus(null);
       setOnlineLearningStatus(null);
+      setCacheStats(null);
     } finally {
       setLoading(false);
     }
@@ -377,6 +438,41 @@ const AdminRecommendation = () => {
     } finally {
       setUpdatingBuffer(false);
     }
+  };
+
+  const handleClearCache = () => {
+    Modal.confirm({
+      title: 'Xác nhận xóa cache',
+      icon: <WarningOutlined />,
+      content: (
+        <div>
+          <p>Bạn có chắc muốn xóa toàn bộ cache gợi ý sách?</p>
+          <p>Điều này sẽ:</p>
+          <ul>
+            <li>Xóa cache recommendations cho tất cả users</li>
+            <li>Xóa cache similar books cho tất cả sách</li>
+            <li>Xóa cache diversity books cho tất cả sách</li>
+          </ul>
+          <p>Cache sẽ được tạo lại khi có request mới.</p>
+        </div>
+      ),
+      okText: 'Xóa cache',
+      cancelText: 'Hủy',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          setClearingCache(true);
+          await clearRecommendationCache();
+          message.success('Đã xóa toàn bộ cache gợi ý sách');
+          await loadAllData();
+        } catch (error) {
+          console.error('Failed to clear cache:', error);
+          message.error('Không thể xóa cache');
+        } finally {
+          setClearingCache(false);
+        }
+      },
+    });
   };
 
   const renderStatusTag = () => {
@@ -785,6 +881,223 @@ const AdminRecommendation = () => {
   const overviewTabContent = (
     <>
       {renderOverviewStats()}
+      
+      {/* Cache Statistics */}
+      <Card
+        title={(
+          <span>
+            <DatabaseOutlined style={{ marginRight: 8 }} />
+            Redis Cache Statistics
+          </span>
+        )}
+        extra={(
+          <Button
+            danger
+            loading={clearingCache}
+            onClick={handleClearCache}
+            icon={<ReloadOutlined />}
+          >
+            Xóa toàn bộ cache
+          </Button>
+        )}
+        style={{ marginBottom: 24 }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={8}>
+            <Statistic
+              title="Recommendations Cache"
+              value={cacheStats?.recommendationsCount ?? 0}
+              prefix={<UserOutlined />}
+              suffix="keys"
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Col>
+          <Col xs={24} sm={8}>
+            <Statistic
+              title="Similar Books Cache"
+              value={cacheStats?.similarBooksCount ?? 0}
+              prefix={<BookOutlined />}
+              suffix="keys"
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Col>
+          <Col xs={24} sm={8}>
+            <Statistic
+              title="Diversity Books Cache"
+              value={cacheStats?.diversityBooksCount ?? 0}
+              prefix={<ThunderboltOutlined />}
+              suffix="keys"
+              valueStyle={{ color: '#fa8c16' }}
+            />
+          </Col>
+        </Row>
+        
+        {/* Button to load cache details */}
+        <div style={{ marginTop: 16, marginBottom: 16 }}>
+          <Space>
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              loading={loadingRedisCaches}
+              onClick={loadRedisCaches}
+            >
+              Xem chi tiết các keys
+            </Button>
+          </Space>
+        </div>
+
+        {/* Cache Details Table */}
+        {redisCaches && (
+          <Collapse defaultActiveKey={['recommendations', 'similarBooks', 'diversityBooks']} style={{ marginTop: 16 }}>
+            {Object.entries(redisCaches).map(([cacheName, keys]) => (
+              <Panel 
+                header={
+                  <span>
+                    <KeyOutlined style={{ marginRight: 8 }} />
+                    {cacheName} ({keys?.length || 0} keys)
+                  </span>
+                } 
+                key={cacheName}
+              >
+                {keys && keys.length > 0 ? (
+                  <Table
+                    dataSource={keys}
+                    rowKey="key"
+                    size="small"
+                    pagination={{ pageSize: 5, size: 'small' }}
+                    columns={[
+                      {
+                        title: 'Key',
+                        dataIndex: 'key',
+                        key: 'key',
+                        width: '40%',
+                        render: (text) => (
+                          <Tooltip title={text}>
+                            <Text ellipsis style={{ maxWidth: 300 }}>{text}</Text>
+                          </Tooltip>
+                        ),
+                      },
+                      {
+                        title: 'Type',
+                        dataIndex: 'type',
+                        key: 'type',
+                        width: '10%',
+                        render: (type) => <Tag color="blue">{type}</Tag>,
+                      },
+                      {
+                        title: 'TTL',
+                        dataIndex: 'ttlSeconds',
+                        key: 'ttlSeconds',
+                        width: '15%',
+                        render: (ttl) => (
+                          <span>
+                            <ClockCircleOutlined style={{ marginRight: 4 }} />
+                            {ttl > 0 ? `${Math.floor(ttl / 60)}m ${ttl % 60}s` : 'No expiry'}
+                          </span>
+                        ),
+                      },
+                      {
+                        title: 'Value Type',
+                        dataIndex: 'valueType',
+                        key: 'valueType',
+                        width: '15%',
+                        render: (type) => <Tag color="green">{type}</Tag>,
+                      },
+                      {
+                        title: 'Preview',
+                        dataIndex: 'valuePreview',
+                        key: 'valuePreview',
+                        width: '15%',
+                        render: (preview) => (
+                          <Tooltip title={preview}>
+                            <Text ellipsis style={{ maxWidth: 150 }}>{preview}</Text>
+                          </Tooltip>
+                        ),
+                      },
+                      {
+                        title: 'Actions',
+                        key: 'actions',
+                        width: '10%',
+                        render: (_, record) => (
+                          <Button
+                            type="link"
+                            icon={<EyeOutlined />}
+                            onClick={() => handleViewKeyValue(record.key)}
+                            size="small"
+                          >
+                            Xem
+                          </Button>
+                        ),
+                      },
+                    ]}
+                  />
+                ) : (
+                  <Alert message="Không có key nào trong cache này" type="info" />
+                )}
+              </Panel>
+            ))}
+          </Collapse>
+        )}
+
+        <Alert
+          message="Cache được tự động xóa khi model retrain hoặc khi online learning update profiles"
+          type="info"
+          showIcon
+          style={{ marginTop: 16 }}
+        />
+      </Card>
+
+      {/* Key Value Modal */}
+      <Modal
+        title={
+          <span>
+            <KeyOutlined style={{ marginRight: 8 }} />
+            Chi tiết Key: {selectedKeyName}
+          </span>
+        }
+        open={keyValueModalVisible}
+        onCancel={() => {
+          setKeyValueModalVisible(false);
+          setSelectedKeyValue(null);
+          setSelectedKeyName('');
+        }}
+        footer={[
+          <Button key="close" onClick={() => setKeyValueModalVisible(false)}>
+            Đóng
+          </Button>
+        ]}
+        width={800}
+      >
+        {loadingKeyValue ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
+          </div>
+        ) : selectedKeyValue ? (
+          <div>
+            <Paragraph>
+              <Text strong>Key: </Text>
+              <Text code copyable>{selectedKeyName}</Text>
+            </Paragraph>
+            <Paragraph>
+              <Text strong>Value (JSON):</Text>
+            </Paragraph>
+            <pre style={{ 
+              background: '#f5f5f5', 
+              padding: 16, 
+              borderRadius: 8,
+              maxHeight: 400,
+              overflow: 'auto',
+              fontSize: 12,
+            }}>
+              {JSON.stringify(selectedKeyValue, null, 2)}
+            </pre>
+          </div>
+        ) : (
+          <Alert message="Không thể lấy giá trị của key này" type="warning" />
+        )}
+      </Modal>
+      
       {renderModelDetails()}
     </>
   );

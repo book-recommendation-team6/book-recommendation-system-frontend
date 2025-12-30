@@ -9,6 +9,7 @@ const Hero = () => {
           backgroundImage: "url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200&h=400&fit=crop')"
         }}
       />
+      <div className="pointer-events-none absolute inset-0 z-10 h-full w-full bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:4px_4px] opacity-20"/>
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col items-center justify-center text-center">
         <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
           THƯ VIỆN Ở TRONG TẦM TAY BẠN

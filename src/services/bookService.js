@@ -49,3 +49,21 @@ export const getBookDetail = async (bookId) => {
     throw error;
   }
 };
+
+/**
+ * Get most read books (top books by reading history count)
+ * @param {number} page - Page number (0-based)
+ * @param {number} size - Number of books per page
+ * @returns {Promise} Response with most read books
+ */
+export const getMostReadBooks = async (page = 0, size = 5) => {
+  try {
+    const response = await api.get('/books/most-read', {
+      params: { page, size }
+    });
+    return response;
+  } catch (error) {
+    console.error("Failed to fetch most read books:", error);
+    throw error;
+  }
+};

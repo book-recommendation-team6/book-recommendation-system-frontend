@@ -1,4 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Sekuya&display=swap');
 @import "tailwindcss";
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 input::-ms-reveal,
@@ -39,4 +41,6 @@ input::-webkit-reveal-button {
 
   --color-sidebar-admin-bg: #152259;
   --color-sidebar-admin-items: #509CDB;
+
+  --font-sekuya: "Sekuya", sans-serif;
 }

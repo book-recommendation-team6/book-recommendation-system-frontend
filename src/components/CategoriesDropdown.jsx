@@ -94,14 +94,14 @@ const CategoryDropdown = ({ onSelect }) => {
           )}
         </div>
         
-        <div className="px-4 pt-2 border-t border-gray-700">
+        {/* <div className="px-4 pt-2 border-t border-gray-700">
           <button 
             onClick={() => navigate('/categories')}
             className="text-sm text-blue-400 hover:text-blue-300 font-medium py-2"
           >
             Xem thêm →
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );
