@@ -6,6 +6,7 @@ import TopBooksShowcase from "../components/TopBooksShowcase";
 import SectionHeader from "../components/SectionHeader";
 import FeaturesSection from "../components/FeaturesSection";
 import StatsSection from "../components/StatsSection";
+import ThemeToggle from "../components/ThemeToggle";
 import MainLayout from "../layout/MainLayout";
 import { getBooks, getBooksByGenre } from "../services/manageBookService";
 import { getRecommendedBooks, getDiversityBooks, getMostReadBooks } from "../services/bookService";
@@ -226,6 +227,7 @@ const Home = () => {
       heroContent={<Hero />}
       onSearchSubmit={handleSearchSubmit}
     >
+      <ThemeToggle />
       <main className="mt-8 px-4 sm:px-6 lg:px-8 space-y-8">
         {loading && (
           <div className="py-16 text-center">
